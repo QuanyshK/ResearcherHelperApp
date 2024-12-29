@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-13-20l3w+w!l_xfbqm0@pihsi8^q9vbc6w0)hi%&dybmh@)(*u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -159,3 +159,5 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+SECURE_SSL_REDIRECT = False
