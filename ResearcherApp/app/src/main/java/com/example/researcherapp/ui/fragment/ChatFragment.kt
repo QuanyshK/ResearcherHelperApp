@@ -77,15 +77,20 @@ class ChatFragment : Fragment() {
     private fun setupSendButton() {
         binding.buttonSend.setOnClickListener {
             val message = binding.editTextMessage.text.toString()
-            if (authManager.isLoggedIn()){
-                if (message.isNotBlank()) {
-                    sendMessage(message)
-                    binding.editTextMessage.text.clear()
+
+            if (!authManager.isLoggedIn()) {
+                context?.let {
+                    Toast.makeText(it, "Please log in to write responses", Toast.LENGTH_SHORT).show()
                 }
-            else {
-                    context?.let {
-                        Toast.makeText(it, "Please log in to write responses", Toast.LENGTH_SHORT).show()
-                    }
+                return@setOnClickListener
+            }
+
+            if (message.isNotBlank()) {
+                sendMessage(message)
+                binding.editTextMessage.text.clear()
+            } else {
+                context?.let {
+                    Toast.makeText(it, "Please write something to provide summarize", Toast.LENGTH_SHORT).show()
                 }
             }
         }

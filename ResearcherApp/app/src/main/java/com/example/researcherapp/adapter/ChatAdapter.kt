@@ -5,6 +5,9 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.researcherapp.data.model.ChatMessage
 import com.example.researcherapp.databinding.ItemChatBinding
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ChatAdapter(private val messages: List<ChatMessage>) :
     RecyclerView.Adapter<ChatAdapter.ChatViewHolder>() {
@@ -25,9 +28,21 @@ class ChatAdapter(private val messages: List<ChatMessage>) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(message: ChatMessage) {
+            val formattedTime = formatTime(message.created_at)
             binding.textViewUserMessage.text = message.user_message
             binding.textViewBotResponse.text = message.bot_response
-            binding.textViewTimestamp.text = message.created_at
+            binding.textViewTimestamp.text = formattedTime
+        }
+
+        private fun formatTime(date: String): String {
+            return try {
+                val originalFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                val targetFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+                val parsedDate: Date = originalFormat.parse(date) ?: Date()
+                targetFormat.format(parsedDate)
+            } catch (e: Exception) {
+                "Unknown Time"
+            }
         }
     }
 }

@@ -1,35 +1,51 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:gravity="center"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:padding="24dp"
+    android:background="@color/backgroundColor">
 
     <EditText
         android:id="@+id/loginUsername"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Username"
-        android:inputType="textPersonName"/>
+        android:inputType="textPersonName"
+        android:background="@drawable/edittext_background"
+        android:padding="12dp"
+        android:textColor="@android:color/white"
+        android:layout_margin="15dp"
+        android:textColorHint="@android:color/darker_gray"/>
 
     <EditText
         android:id="@+id/loginPassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Password"
-        android:inputType="textPassword" />
+        android:inputType="textPassword"
+        android:background="@drawable/edittext_background"
+        android:padding="12dp"
+        android:textColor="@android:color/white"
+        android:textColorHint="@android:color/darker_gray"
+        android:layout_margin="15dp"/>
 
     <Button
         android:id="@+id/loginButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Login" />
+        android:text="Login"
+        android:backgroundTint="@color/buttonColor"
+        android:textColor="@android:color/white"
+        android:padding="16dp"
+        android:layout_margin="15dp"/>
 
     <TextView
         android:id="@+id/signUpText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Don't have an account? Sign up"
-        android:textColor="@android:color/holo_blue_light"
+        android:textColor="@color/buttonColor"
         android:layout_gravity="center"
-        android:paddingTop="16dp"/>
+        android:paddingTop="24dp"/>
 </LinearLayout>
