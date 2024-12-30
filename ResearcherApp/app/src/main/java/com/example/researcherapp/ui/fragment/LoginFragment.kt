@@ -1,6 +1,5 @@
 package com.example.researcherapp.ui.fragment
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +17,6 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class LoginFragment : Fragment() {
-
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
     private lateinit var authManager: AuthManager
@@ -29,9 +27,6 @@ class LoginFragment : Fragment() {
     ): View {
         _binding = FragmentLoginBinding.inflate(inflater, container, false)
         authManager = AuthManager(requireContext().applicationContext)
-
-        loadTokenFromPrefs()
-
         return binding.root
     }
 
@@ -60,7 +55,7 @@ class LoginFragment : Fragment() {
                     if (response.isSuccessful) {
                         response.body()?.token?.let { token ->
                             ApiClient.setAuthToken(token)
-                            saveTokenToPrefs(token)
+                            authManager.saveAuthToken(token)
                             Toast.makeText(context, "Logged in", Toast.LENGTH_SHORT).show()
                             replaceFragment(ProfileFragment())
                         }
@@ -77,25 +72,12 @@ class LoginFragment : Fragment() {
         }
     }
 
-    private fun saveTokenToPrefs(token: String) {
-        val prefs = requireContext().getSharedPreferences("auth", Context.MODE_PRIVATE)
-        prefs.edit().putString("token", token).apply()
-    }
-
-    private fun loadTokenFromPrefs() {
-        val prefs = requireContext().getSharedPreferences("auth", Context.MODE_PRIVATE)
-        prefs.getString("token", null)?.let {
-            ApiClient.setAuthToken(it)
-            replaceFragment(ProfileFragment())
-        }
-    }
-
     private fun replaceFragment(fragment: Fragment) {
         parentFragmentManager.popBackStack()
         parentFragmentManager.beginTransaction()
             .replace(R.id.frame_layout, fragment)
             .addToBackStack(null)
-            .commitAllowingStateLoss()
+            .commit()
     }
 
     override fun onDestroyView() {

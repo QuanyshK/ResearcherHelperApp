@@ -6,9 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.example.researcherapp.R
-import com.example.researcherapp.databinding.FragmentProfileBinding
+import com.example.researcherapp.data.database.AuthManager
 import com.example.researcherapp.data.network.ApiClient
 import com.example.researcherapp.data.network.ProfileResponse
+import com.example.researcherapp.databinding.FragmentProfileBinding
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -17,31 +18,36 @@ class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
+    private lateinit var authManager: AuthManager
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentProfileBinding.inflate(inflater, container, false)
-        loadProfile()
-        setupLogoutButton()
+        authManager = AuthManager(requireContext().applicationContext)
         return binding.root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        loadProfile()
+        setupLogoutButton()
+    }
     private fun loadProfile() {
         ApiClient.instance.getProfile().enqueue(object : Callback<ProfileResponse> {
             override fun onResponse(call: Call<ProfileResponse>, response: Response<ProfileResponse>) {
                 if (response.isSuccessful) {
                     val profile = response.body()
-                    binding.profileTitle.text = profile?.username
-                    binding.email.text = profile?.email
+                    binding.profileTitle.text = profile?.username ?: "Unknown User"
+                    binding.email.text = profile?.email ?: "No Email"
                 } else {
-                    binding.profileTitle.text = "Failed to load profile"
+                    logout()
                 }
             }
 
             override fun onFailure(call: Call<ProfileResponse>, t: Throwable) {
-                binding.profileTitle.text = "Error loading profile"
+                logout()
             }
         })
     }
@@ -53,13 +59,12 @@ class ProfileFragment : Fragment() {
     }
 
     private fun logout() {
-        val prefs = requireContext().getSharedPreferences("auth", 0)
-        prefs.edit().remove("token").apply()
+        authManager.clearAuthToken()
 
         parentFragmentManager.popBackStack()
         parentFragmentManager.beginTransaction()
             .replace(R.id.frame_layout, LoginFragment())
-            .commitAllowingStateLoss()
+            .commit()
     }
 
     override fun onDestroyView() {

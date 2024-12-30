@@ -19,9 +19,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        replaceFragment(ChatFragment())
+
         authManager = AuthManager(this)
 
+        replaceFragment(ChatFragment())
+
+        setupBottomNavigation()
+    }
+
+    private fun setupBottomNavigation() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.chat -> {
@@ -29,34 +35,27 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.profile -> {
-                    if (isUserLoggedIn()) {
-                        if (currentFragment !is ProfileFragment) {
-                            replaceFragment(ProfileFragment())
-                        }
+                    if (authManager.isLoggedIn()) {
+                        replaceFragment(ProfileFragment())
                     } else {
-                        if (currentFragment !is LoginFragment) {
-                            replaceFragment(LoginFragment())
-                        }
+                        replaceFragment(LoginFragment())
                     }
                     true
                 }
-                else -> true
+                else -> false
             }
         }
     }
 
     private fun replaceFragment(fragment: Fragment, addToBackStack: Boolean = false) {
-        supportFragmentManager.popBackStack()
-        val transaction = supportFragmentManager.beginTransaction()
-        transaction.replace(R.id.frame_layout, fragment)
-        if (addToBackStack) {
-            transaction.addToBackStack(null)
+        if (currentFragment != fragment) {
+            val transaction = supportFragmentManager.beginTransaction()
+            transaction.replace(R.id.frame_layout, fragment)
+            if (addToBackStack) {
+                transaction.addToBackStack(null)
+            }
+            transaction.commit()
+            currentFragment = fragment
         }
-        transaction.commit()
-    }
-
-    private fun isUserLoggedIn(): Boolean {
-        val authToken = authManager.getAuthToken()
-        return !authToken.isNullOrEmpty()
     }
 }

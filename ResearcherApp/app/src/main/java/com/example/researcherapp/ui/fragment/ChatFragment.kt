@@ -7,7 +7,9 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.researcherapp.R
 import com.example.researcherapp.adapter.ChatAdapter
+import com.example.researcherapp.data.database.AuthManager
 import com.example.researcherapp.data.network.ApiClient
 import com.example.researcherapp.data.model.ChatMessage
 import com.example.researcherapp.data.network.ChatRequest
@@ -20,6 +22,7 @@ class ChatFragment : Fragment() {
 
     private var _binding: FragmentChatBinding? = null
     private val binding get() = _binding!!
+    private lateinit var authManager: AuthManager
     private lateinit var chatAdapter: ChatAdapter
     private val messages = mutableListOf<ChatMessage>()
 
@@ -31,6 +34,7 @@ class ChatFragment : Fragment() {
         setupRecyclerView()
         fetchChatHistory()
         setupSendButton()
+        authManager = AuthManager(requireContext().applicationContext)
         return binding.root
     }
 
@@ -56,22 +60,33 @@ class ChatFragment : Fragment() {
                             chatAdapter.notifyDataSetChanged()
                         }
                     } else {
-                        Toast.makeText(context, "Failed to load messages", Toast.LENGTH_SHORT).show()
+                        context?.let {
+                        }
                     }
                 }
 
                 override fun onFailure(call: Call<List<ChatMessage>>, t: Throwable) {
-                    Toast.makeText(context, "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                    context?.let {
+                        Toast.makeText(it, "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             })
     }
 
+
     private fun setupSendButton() {
         binding.buttonSend.setOnClickListener {
             val message = binding.editTextMessage.text.toString()
-            if (message.isNotBlank()) {
-                sendMessage(message)
-                binding.editTextMessage.text.clear()
+            if (authManager.isLoggedIn()){
+                if (message.isNotBlank()) {
+                    sendMessage(message)
+                    binding.editTextMessage.text.clear()
+                }
+            else {
+                    context?.let {
+                        Toast.makeText(it, "Please log in to write responses", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }

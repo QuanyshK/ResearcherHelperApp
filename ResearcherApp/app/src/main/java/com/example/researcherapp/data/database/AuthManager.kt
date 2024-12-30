@@ -17,4 +17,7 @@ class AuthManager(context: Context) {
     fun clearAuthToken() {
         prefs.edit().remove("auth_token").apply()
     }
+    fun isLoggedIn(): Boolean {
+        return !getAuthToken().isNullOrEmpty()
+    }
 }
