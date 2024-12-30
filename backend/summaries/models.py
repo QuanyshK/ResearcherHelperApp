@@ -1,14 +1,11 @@
 from django.db import models
-from django.contrib.auth import get_user_model
+from users.models import User
 
-User = get_user_model()
-
-class Chat(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chats')
-    message = models.TextField()
-    response = models.TextField(blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    is_summary = models.BooleanField(default=True)
+class ChatMessage(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chat_messages")
+    user_message = models.TextField()
+    bot_response = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'Chat by {self.user.username} at {self.timestamp}'
+        return f"User: {self.user_message[:50]} - Bot: {self.bot_response[:50]}"

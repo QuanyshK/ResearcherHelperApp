@@ -4,29 +4,24 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.researcherapp.adapter.ChatAdapter
 import com.example.researcherapp.data.network.ApiClient
+import com.example.researcherapp.data.model.ChatMessage
 import com.example.researcherapp.data.network.ChatRequest
-import com.example.researcherapp.data.network.ChatResponse
 import com.example.researcherapp.databinding.FragmentChatBinding
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.text.SimpleDateFormat
-import java.util.*
 
 class ChatFragment : Fragment() {
 
     private var _binding: FragmentChatBinding? = null
     private val binding get() = _binding!!
     private lateinit var chatAdapter: ChatAdapter
-    private val messages = mutableListOf<ChatResponse>()
-    private lateinit var webSocket: WebSocket
+    private val messages = mutableListOf<ChatMessage>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -34,8 +29,8 @@ class ChatFragment : Fragment() {
     ): View {
         _binding = FragmentChatBinding.inflate(inflater, container, false)
         setupRecyclerView()
+        fetchChatHistory()
         setupSendButton()
-        connectWebSocket()
         return binding.root
     }
 
@@ -45,6 +40,30 @@ class ChatFragment : Fragment() {
             layoutManager = LinearLayoutManager(context)
             adapter = chatAdapter
         }
+    }
+
+    private fun fetchChatHistory() {
+        ApiClient.instance.getChatList()
+            .enqueue(object : Callback<List<ChatMessage>> {
+                override fun onResponse(
+                    call: Call<List<ChatMessage>>,
+                    response: Response<List<ChatMessage>>
+                ) {
+                    if (response.isSuccessful) {
+                        response.body()?.let { chatList ->
+                            messages.clear()
+                            messages.addAll(chatList)
+                            chatAdapter.notifyDataSetChanged()
+                        }
+                    } else {
+                        Toast.makeText(context, "Failed to load messages", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onFailure(call: Call<List<ChatMessage>>, t: Throwable) {
+                    Toast.makeText(context, "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
+            })
     }
 
     private fun setupSendButton() {
@@ -58,51 +77,29 @@ class ChatFragment : Fragment() {
     }
 
     private fun sendMessage(message: String) {
-        val timestamp = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        messages.add(ChatResponse("You", message, timestamp))
-        chatAdapter.notifyItemInserted(messages.size - 1)
-        binding.recyclerViewChat.scrollToPosition(messages.size - 1)
-
         val request = ChatRequest(message)
-        ApiClient.instance.sendMessage(request).enqueue(object : Callback<ChatResponse> {
-            override fun onResponse(call: Call<ChatResponse>, response: Response<ChatResponse>) {
-                response.body()?.let {
-                    messages.add(it)
-                    chatAdapter.notifyItemInserted(messages.size - 1)
-                    binding.recyclerViewChat.scrollToPosition(messages.size - 1)
+        ApiClient.instance.sendMessage(request)
+            .enqueue(object : Callback<ChatMessage> {
+                override fun onResponse(call: Call<ChatMessage>, response: Response<ChatMessage>) {
+                    if (response.isSuccessful) {
+                        response.body()?.let {
+                            messages.add(it)
+                            chatAdapter.notifyItemInserted(messages.size - 1)
+                            binding.recyclerViewChat.scrollToPosition(messages.size - 1)
+                        }
+                    } else {
+                        Toast.makeText(context, "Failed to send message", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }
 
-            override fun onFailure(call: Call<ChatResponse>, t: Throwable) {
-                messages.add(ChatResponse("System", "Failed to connect", timestamp))
-                chatAdapter.notifyItemInserted(messages.size - 1)
-            }
-        })
-
-        val json = JSONObject().apply {
-            put("message", message)
-        }
-        webSocket.send(json.toString())
-    }
-
-    private fun connectWebSocket() {
-        webSocket = ApiClient.connectWebSocket(object : WebSocketListener() {
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                val json = JSONObject(text)
-                val message = json.getString("message")
-                val timestamp = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                requireActivity().runOnUiThread {
-                    messages.add(ChatResponse("AI", message, timestamp))
-                    chatAdapter.notifyItemInserted(messages.size - 1)
-                    binding.recyclerViewChat.scrollToPosition(messages.size - 1)
+                override fun onFailure(call: Call<ChatMessage>, t: Throwable) {
+                    Toast.makeText(context, "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
                 }
-            }
-        })
+            })
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-        webSocket.close(1000, "Fragment closed")
     }
 }

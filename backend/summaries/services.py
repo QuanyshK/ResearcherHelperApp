@@ -8,7 +8,7 @@ class GeminiService:
 
     def summarize(self, text):
         try:
-            response = self.model.generate_content(f"Summarize this text: {text}")
+            response = self.model.generate_content(f"Provide a detailed summary (a minimum 400-500 words) of the following text or article:: {text}")
             return response.text
         except Exception as e:
             return f"Error: {str(e)}"

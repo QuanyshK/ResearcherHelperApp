@@ -3,10 +3,10 @@ package com.example.researcherapp.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.example.researcherapp.data.model.ChatMessage
 import com.example.researcherapp.databinding.ItemChatBinding
-import com.example.researcherapp.data.network.ChatResponse
 
-class ChatAdapter(private val messages: List<ChatResponse>) :
+class ChatAdapter(private val messages: List<ChatMessage>) :
     RecyclerView.Adapter<ChatAdapter.ChatViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChatViewHolder {
@@ -15,7 +15,8 @@ class ChatAdapter(private val messages: List<ChatResponse>) :
     }
 
     override fun onBindViewHolder(holder: ChatViewHolder, position: Int) {
-        holder.bind(messages[position])
+        val message = messages[position]
+        holder.bind(message)
     }
 
     override fun getItemCount(): Int = messages.size
@@ -23,10 +24,10 @@ class ChatAdapter(private val messages: List<ChatResponse>) :
     inner class ChatViewHolder(private val binding: ItemChatBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(message: ChatResponse) {
-            binding.textViewSender.text = message.sender
-            binding.textViewMessage.text = message.message
-            binding.textViewTimestamp.text = message.timestamp
+        fun bind(message: ChatMessage) {
+            binding.textViewUserMessage.text = message.user_message
+            binding.textViewBotResponse.text = message.bot_response
+            binding.textViewTimestamp.text = message.created_at
         }
     }
 }
