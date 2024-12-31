@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:itemTextSize="http://schemas.android.com/tools"
     android:orientation="vertical"
     android:background="@color/backgroundColor">
     <FrameLayout
@@ -21,6 +22,10 @@
         app:itemTextColor="@color/primaryTextColor"
         android:background="@drawable/bottom_nav_shadow"
         app:labelVisibilityMode="labeled"
-        app:itemIconSize="25dp"/>
+        app:itemIconSize="25dp"
+        app:itemTextAppearanceActive="@style/BottomNavTextAppearance"
+        app:itemTextAppearanceInactive="@style/BottomNavTextAppearance"
+        android:padding="10dp"
+        />
 
 </LinearLayout>

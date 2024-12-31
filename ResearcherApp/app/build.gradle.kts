@@ -59,4 +59,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.converter.scalars)
+    implementation (libs.okhttp)
+    implementation (libs.adapter.rxjava2)
 }

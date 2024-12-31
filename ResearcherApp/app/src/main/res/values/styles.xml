@@ -1,0 +1,6 @@
+<resources>
+    <style name="BottomNavTextAppearance" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">@font/courier_new</item>
+    </style>
+</resources>

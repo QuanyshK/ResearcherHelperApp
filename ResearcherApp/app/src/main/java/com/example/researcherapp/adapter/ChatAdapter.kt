@@ -28,8 +28,13 @@ class ChatAdapter(private val messages: List<ChatMessage>) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(message: ChatMessage) {
+            val userMessageText = if (message.user_message.startsWith("file:")) {
+                message.user_message.substringAfter("file:")
+            } else {
+                message.user_message
+            }
             val formattedTime = formatTime(message.created_at)
-            binding.textViewUserMessage.text = message.user_message
+            binding.textViewUserMessage.text = userMessageText
             binding.textViewBotResponse.text = message.bot_response
             binding.textViewTimestamp.text = formattedTime
         }
