@@ -135,7 +135,6 @@ class ChatFragment : Fragment() {
 
     private fun sendMessage(message: String) {
         val messageBody = RequestBody.create("text/plain".toMediaTypeOrNull(), message)
-
         val fileNameBody = RequestBody.create("text/plain".toMediaTypeOrNull(), selectedFileName ?: "")
 
         val filePart: MultipartBody.Part? = selectedFile?.let {
@@ -149,14 +148,17 @@ class ChatFragment : Fragment() {
             val requestFile = RequestBody.create(requireContext().contentResolver.getType(it)?.toMediaTypeOrNull(), tempFile)
             MultipartBody.Part.createFormData("file", selectedFileName ?: "unknown", requestFile)
         }
+        
+        val displayMessage = selectedFileName ?: message
 
         val userMessage = ChatMessage(
             id = messages.size + 1,
-            user_message = selectedFileName ?: message,
+            user_message = displayMessage,
             bot_response = "Processing...",
             file_name = selectedFileName ?: "",
             created_at = getCurrentTime()
         )
+
         messages.add(userMessage)
         chatAdapter.notifyItemInserted(messages.size - 1)
         binding.recyclerViewChat.scrollToPosition(messages.size - 1)
@@ -168,7 +170,7 @@ class ChatFragment : Fragment() {
                         response.body()?.let { botResponse ->
                             val index = messages.indexOf(userMessage)
                             if (index != -1) {
-                                messages[index] = botResponse.copy(user_message = "")
+                                messages[index] = botResponse.copy(user_message = displayMessage)
                                 chatAdapter.notifyItemChanged(index)
                             }
                         }
