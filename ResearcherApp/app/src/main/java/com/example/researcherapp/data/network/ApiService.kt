@@ -33,7 +33,8 @@ interface ApiService {
     @POST("ai/send/")
     fun sendMessage(
         @Part("message") message: RequestBody,
-        @Part file: MultipartBody.Part?
+        @Part file: MultipartBody.Part?,
+        @Part("file_name") fileName: RequestBody
     ): Call<ChatMessage>
 
     @GET("ai/")

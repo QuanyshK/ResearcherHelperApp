@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.researcherapp.R
 import com.example.researcherapp.adapter.ChatAdapter
 import com.example.researcherapp.data.database.AuthManager
 import com.example.researcherapp.data.model.ChatMessage
@@ -25,6 +26,8 @@ import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class ChatFragment : Fragment() {
 
@@ -43,10 +46,15 @@ class ChatFragment : Fragment() {
     ): View {
         _binding = FragmentChatBinding.inflate(inflater, container, false)
         authManager = AuthManager(requireContext().applicationContext)
-        setupRecyclerView()
-        fetchChatHistory()
-        setupSendButton()
-        setupFilePicker()
+
+        if (!authManager.isLoggedIn()) {
+            redirectToLogin()
+        } else {
+            setupRecyclerView()
+            fetchChatHistory()
+            setupSendButton()
+            setupFilePicker()
+        }
         return binding.root
     }
 
@@ -62,7 +70,10 @@ class ChatFragment : Fragment() {
         binding.buttonAttach.setOnClickListener {
             val intent = Intent(Intent.ACTION_GET_CONTENT)
             intent.type = "*/*"
-            intent.putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+            intent.putExtra(
+                Intent.EXTRA_MIME_TYPES,
+                arrayOf("application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            )
             startActivityForResult(intent, PICK_FILE_REQUEST)
         }
     }
@@ -75,7 +86,7 @@ class ChatFragment : Fragment() {
                 selectedFileName = getFileName(it)
                 binding.editTextMessage.setText(selectedFileName)
                 binding.editTextMessage.isEnabled = false
-                Toast.makeText(context, "File Selected: $selectedFileName", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "File Selected: $selectedFileName", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -84,16 +95,23 @@ class ChatFragment : Fragment() {
         ApiClient.instance.getChatList().enqueue(object : Callback<List<ChatMessage>> {
             override fun onResponse(call: Call<List<ChatMessage>>, response: Response<List<ChatMessage>>) {
                 if (response.isSuccessful) {
+                    messages.clear()
                     response.body()?.let {
-                        messages.clear()
                         messages.addAll(it)
                         chatAdapter.notifyDataSetChanged()
+                    }
+                } else {
+                    if (response.code() == 401) {
+                        authManager.clearAuthToken()
+                        redirectToLogin()
                     }
                 }
             }
 
             override fun onFailure(call: Call<List<ChatMessage>>, t: Throwable) {
-                Toast.makeText(context, "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
             }
         })
     }
@@ -102,19 +120,23 @@ class ChatFragment : Fragment() {
         binding.buttonSend.setOnClickListener {
             val message = binding.editTextMessage.text.toString()
             if (selectedFile != null || message.isNotBlank()) {
+                val displayMessage = selectedFileName ?: message
                 sendMessage(message)
                 binding.editTextMessage.text.clear()
                 binding.editTextMessage.isEnabled = true
                 selectedFile = null
                 selectedFileName = null
             } else {
-                Toast.makeText(context, "Please write something or attach a file", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Please write something or attach a file", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+
     private fun sendMessage(message: String) {
         val messageBody = RequestBody.create("text/plain".toMediaTypeOrNull(), message)
+
+        val fileNameBody = RequestBody.create("text/plain".toMediaTypeOrNull(), selectedFileName ?: "")
 
         val filePart: MultipartBody.Part? = selectedFile?.let {
             val inputStream: InputStream? = context?.contentResolver?.openInputStream(it)
@@ -124,36 +146,52 @@ class ChatFragment : Fragment() {
             inputStream?.close()
             outputStream.close()
 
-            val requestFile = RequestBody.create(context?.contentResolver?.getType(it)?.toMediaTypeOrNull(), tempFile)
-            MultipartBody.Part.createFormData("file", getFileName(it) ?: "unknown", requestFile)
+            val requestFile = RequestBody.create(requireContext().contentResolver.getType(it)?.toMediaTypeOrNull(), tempFile)
+            MultipartBody.Part.createFormData("file", selectedFileName ?: "unknown", requestFile)
         }
 
-        val displayMessage = selectedFileName?.let { "file:$it" } ?: message
+        val userMessage = ChatMessage(
+            id = messages.size + 1,
+            user_message = selectedFileName ?: message,
+            bot_response = "Processing...",
+            file_name = selectedFileName ?: "",
+            created_at = getCurrentTime()
+        )
+        messages.add(userMessage)
+        chatAdapter.notifyItemInserted(messages.size - 1)
+        binding.recyclerViewChat.scrollToPosition(messages.size - 1)
 
-        ApiClient.instance.sendMessage(messageBody, filePart)
+        ApiClient.instance.sendMessage(messageBody, filePart, fileNameBody)
             .enqueue(object : Callback<ChatMessage> {
                 override fun onResponse(call: Call<ChatMessage>, response: Response<ChatMessage>) {
                     if (response.isSuccessful) {
-                        response.body()?.let {
-                            val chatMessage = it.copy(user_message = displayMessage)
-                            messages.add(chatMessage)
-                            chatAdapter.notifyItemInserted(messages.size - 1)
-                            binding.recyclerViewChat.scrollToPosition(messages.size - 1)
+                        response.body()?.let { botResponse ->
+                            val index = messages.indexOf(userMessage)
+                            if (index != -1) {
+                                messages[index] = botResponse.copy(user_message = "")
+                                chatAdapter.notifyItemChanged(index)
+                            }
                         }
-                    } else {
-                        Toast.makeText(context, "Failed to send message", Toast.LENGTH_SHORT).show()
                     }
                 }
 
                 override fun onFailure(call: Call<ChatMessage>, t: Throwable) {
-                    Toast.makeText(context, "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                    val index = messages.indexOf(userMessage)
+                    if (index != -1) {
+                        messages[index] = userMessage.copy(bot_response = "Failed to get response.")
+                        chatAdapter.notifyItemChanged(index)
+                    }
+                    Toast.makeText(requireContext(), "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
                 }
             })
     }
 
+
+
+
     private fun getFileName(uri: Uri): String? {
         var name: String? = null
-        val cursor = context?.contentResolver?.query(uri, null, null, null, null)
+        val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
         cursor?.use {
             val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             if (nameIndex != -1) {
@@ -162,6 +200,16 @@ class ChatFragment : Fragment() {
             }
         }
         return name ?: uri.lastPathSegment
+    }
+
+    private fun getCurrentTime(): String {
+        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(java.util.Date())
+    }
+
+    private fun redirectToLogin() {
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.frame_layout, LoginFragment())
+            .commit()
     }
 
     override fun onDestroyView() {

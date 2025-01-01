@@ -41,17 +41,19 @@ class ChatMessageCreateView(APIView):
 
     def post(self, request, *args, **kwargs):
         serializer = ChatCreateSerializer(data=request.data)
-        
+
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         text = serializer.validated_data.get('message', '')
         file_obj = request.FILES.get('file')
+        file_name = request.data.get('file_name', 'Unknown')
         prompt_instructions = ""
-        
+
         if file_obj:
             filename = file_obj.name
             file_path = os.path.join('/tmp', filename)
+            file_name = file_obj.name  
             
             with open(file_path, 'wb+') as f:
                 for chunk in file_obj.chunks():
@@ -64,29 +66,27 @@ class ChatMessageCreateView(APIView):
                 text = extract_text_from_docx(file_path)
 
             os.remove(file_path)
+
             if not text:
                 return Response({"error": "Failed to extract text from file"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         if not text:
             return Response({"error": "Text or File required"}, status=status.HTTP_400_BAD_REQUEST)
 
         gemini = GeminiService()
         try:
             summary = gemini.summarize(prompt_instructions + text) if prompt_instructions else gemini.summarize(text)
-            
-            if "Error:" in summary:
-                return Response({"error": summary}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-
             chat = ChatMessage.objects.create(
                 user=request.user,
                 user_message=text,
-                bot_response=summary
+                bot_response=summary,
+                file_name=file_name  
             )
-            
             return Response(ChatMessageSerializer(chat).data, status=status.HTTP_201_CREATED)
         
         except Exception as e:
             return Response({"error": f"Failed to save chat: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class ChatMessageDetailView(generics.RetrieveAPIView):

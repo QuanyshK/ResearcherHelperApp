@@ -16,6 +16,10 @@ object ApiClient {
 
     private val client by lazy {
         OkHttpClient.Builder()
+            .callTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // Общий таймаут на вызов
+            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // Таймаут подключения
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // Таймаут на чтение данных
+            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // Таймаут на запись данных
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                 if (::authToken.isInitialized && authToken.isNotEmpty()) {
@@ -25,7 +29,6 @@ object ApiClient {
             }
             .build()
     }
-
     val instance: ApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)

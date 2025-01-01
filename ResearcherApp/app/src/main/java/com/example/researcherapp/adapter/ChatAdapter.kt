@@ -1,6 +1,7 @@
 package com.example.researcherapp.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.researcherapp.data.model.ChatMessage
@@ -28,14 +29,25 @@ class ChatAdapter(private val messages: List<ChatMessage>) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(message: ChatMessage) {
-            val userMessageText = if (message.user_message.startsWith("file:")) {
-                message.user_message.substringAfter("file:")
-            } else {
-                message.user_message
-            }
             val formattedTime = formatTime(message.created_at)
-            binding.textViewUserMessage.text = userMessageText
-            binding.textViewBotResponse.text = message.bot_response
+
+            if (message.bot_response.isNotEmpty() && message.bot_response != "Processing...") {
+                binding.textViewBotResponse.visibility = View.VISIBLE
+                binding.textViewBotResponse.text = message.bot_response
+            } else {
+                binding.textViewBotResponse.visibility = View.GONE
+            }
+
+            if (!message.file_name.isNullOrEmpty()) {
+                binding.textViewUserMessage.visibility = View.VISIBLE
+                binding.textViewUserMessage.text = "📎 ${message.file_name}"
+            } else if (message.user_message.isNotEmpty()) {
+                binding.textViewUserMessage.visibility = View.VISIBLE
+                binding.textViewUserMessage.text = message.user_message
+            } else {
+                binding.textViewUserMessage.visibility = View.GONE
+            }
+
             binding.textViewTimestamp.text = formattedTime
         }
 
