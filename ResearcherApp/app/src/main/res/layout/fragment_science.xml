@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center"
+    android:background="@drawable/gradient_background">
+
+    <EditText
+        android:id="@+id/editTextDoi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter DOI or URL"
+        android:textColorHint="@color/dark_gray"
+        android:textColor="@color/primaryTextColor"
+        android:background="@drawable/edittext_background"
+        android:padding="16dp"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/buttonGenerateLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Generate and Open PDF"
+        android:backgroundTint="@color/buttonColor"
+        android:textColor="@android:color/white"
+        android:padding="16dp"
+        android:layout_marginBottom="24dp"/>
+</LinearLayout>

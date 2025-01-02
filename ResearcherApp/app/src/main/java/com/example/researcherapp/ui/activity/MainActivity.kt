@@ -10,6 +10,7 @@ import com.example.researcherapp.ui.fragment.ChatFragment
 import com.example.researcherapp.ui.fragment.LoginFragment
 import com.example.researcherapp.ui.fragment.ProfileFragment
 import com.example.researcherapp.ui.fragment.ResearchListFragment
+import com.example.researcherapp.ui.fragment.ScienceFragment
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -38,6 +39,14 @@ class MainActivity : AppCompatActivity() {
                 R.id.search -> {
                     if (authManager.isLoggedIn()) {
                         replaceFragment(ResearchListFragment())
+                    } else {
+                        replaceFragment(LoginFragment())
+                    }
+                    true
+                }
+                R.id.hackLink -> {
+                    if (authManager.isLoggedIn()) {
+                        replaceFragment(ScienceFragment())
                     } else {
                         replaceFragment(LoginFragment())
                     }

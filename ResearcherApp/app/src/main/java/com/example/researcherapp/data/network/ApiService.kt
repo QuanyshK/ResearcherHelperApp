@@ -45,4 +45,9 @@ interface ApiService {
 
     @DELETE("ai/{id}/delete/")
     fun deleteChat(@Path("id") chatId: Int): Call<Void>
+
+    @POST("researcher_api/generate-link/")
+    fun generateScienceLink(@Body params: Map<String, String>): Call<Map<String, String>>
+
+
 }

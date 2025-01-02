@@ -5,5 +5,5 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('profile/', ProfileView.as_view(), name='profile'),
-    path('api/auth/google/', GoogleAuthView.as_view(), name='google_auth'),
+    path('auth/google/', GoogleAuthView.as_view(), name='google_auth'),
 ]

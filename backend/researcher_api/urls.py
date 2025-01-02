@@ -1,6 +1,8 @@
-from django.urls import path
-from .views import SciHubView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import generate_scihub_link
+
 
 urlpatterns = [
-    path('scihub/', SciHubView.as_view(), name='scihub-download'),
+    path('generate-link/', generate_scihub_link, name='generate_link'),
 ]

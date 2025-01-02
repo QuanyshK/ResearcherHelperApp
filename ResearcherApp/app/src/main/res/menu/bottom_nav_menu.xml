@@ -8,6 +8,11 @@
         android:id="@+id/search"
         android:icon="@drawable/ic_search_foreground"
         android:title="Search" />
+    <item
+        android:id="@+id/hackLink"
+        android:icon="@drawable/ic_hacklink_foreground"
+        android:title="Hack Link" />
+
 
     <item
         android:id="@+id/profile"
