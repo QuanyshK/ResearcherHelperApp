@@ -8,7 +8,9 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.researcherapp.R
 import com.example.researcherapp.adapter.ArxivAdapter
+import com.example.researcherapp.data.model.ArxivEntry
 import com.example.researcherapp.data.model.ArxivFeed
 import com.example.researcherapp.data.network.ArxivClient
 import com.example.researcherapp.databinding.FragmentResearchListBinding
@@ -38,7 +40,10 @@ class ResearchListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = ArxivAdapter()
+        adapter = ArxivAdapter { entry ->
+            openDetailsFragment(entry)
+        }
+
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = adapter
 
@@ -108,9 +113,21 @@ class ResearchListFragment : Fragment() {
         adapter.submitList(emptyList(), false)
     }
 
+    private fun openDetailsFragment(entry: ArxivEntry) {
+        val fragment = ArticleDetailsFragment().apply {
+            arguments = Bundle().apply {
+                putParcelable("article", entry)
+            }
+        }
+
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.frame_layout, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
 }
-

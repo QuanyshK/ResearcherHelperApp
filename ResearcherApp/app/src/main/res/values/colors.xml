@@ -4,4 +4,7 @@
     <color name="inputBackground">#2C2C2C</color>
     <color name="primaryTextColor">#FFFFFF</color>
     <color name="black">#000000</color>
+    <color name="light_gray">#F5F5F5</color>
+    <color name="dark_gray">#757575</color>
+    <color name="primary">#3F51B5</color>
 </resources>

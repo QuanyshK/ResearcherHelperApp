@@ -46,7 +46,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Don't have an account? Sign up"
-        android:textColor="@color/buttonColor"
+        android:textColor="@color/primaryTextColor"
         android:layout_gravity="center"
         android:paddingTop="24dp"/>
 

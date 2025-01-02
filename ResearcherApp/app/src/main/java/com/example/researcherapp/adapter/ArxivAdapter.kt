@@ -1,7 +1,5 @@
 package com.example.researcherapp.adapter
 
-import android.content.Intent
-import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -12,7 +10,9 @@ import com.example.researcherapp.databinding.ItemLoadingFooterBinding
 private const val VIEW_TYPE_ITEM = 0
 private const val VIEW_TYPE_LOADING = 1
 
-class ArxivAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ArxivAdapter(
+    private val onDetailsClick: (ArxivEntry) -> Unit
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val items = mutableListOf<ArxivEntry?>()
 
@@ -20,7 +20,7 @@ class ArxivAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         items.clear()
         items.addAll(newItems)
         if (isLoading) {
-            items.add(null)  // Добавляем null для футера
+            items.add(null)
         }
         notifyDataSetChanged()
     }
@@ -55,22 +55,20 @@ class ArxivAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun getItemCount(): Int = items.size
 
-    class ArxivViewHolder(private val binding: ItemArticleBinding) :
+    inner class ArxivViewHolder(private val binding: ItemArticleBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(entry: ArxivEntry) {
             binding.textViewTitle.text = entry.title
             binding.textViewSummary.text = entry.summary
-            val pdfLink = entry.link.find { it.title == "pdf" }?.href
+
+            binding.buttonDownload.text = "Details"
             binding.buttonDownload.setOnClickListener {
-                pdfLink?.let {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
-                    binding.root.context.startActivity(intent)
-                }
+                onDetailsClick(entry)
             }
         }
     }
 
-    class LoadingViewHolder(binding: ItemLoadingFooterBinding) :
+    inner class LoadingViewHolder(binding: ItemLoadingFooterBinding) :
         RecyclerView.ViewHolder(binding.root)
 }
