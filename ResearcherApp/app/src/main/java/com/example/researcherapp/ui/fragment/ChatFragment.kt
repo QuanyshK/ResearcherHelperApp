@@ -148,7 +148,7 @@ class ChatFragment : Fragment() {
             val requestFile = RequestBody.create(requireContext().contentResolver.getType(it)?.toMediaTypeOrNull(), tempFile)
             MultipartBody.Part.createFormData("file", selectedFileName ?: "unknown", requestFile)
         }
-        
+
         val displayMessage = selectedFileName ?: message
 
         val userMessage = ChatMessage(

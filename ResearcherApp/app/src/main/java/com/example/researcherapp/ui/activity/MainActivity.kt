@@ -9,6 +9,7 @@ import com.example.researcherapp.databinding.ActivityMainBinding
 import com.example.researcherapp.ui.fragment.ChatFragment
 import com.example.researcherapp.ui.fragment.LoginFragment
 import com.example.researcherapp.ui.fragment.ProfileFragment
+import com.example.researcherapp.ui.fragment.ResearchListFragment
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -32,6 +33,14 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.chat -> {
                     replaceFragment(ChatFragment())
+                    true
+                }
+                R.id.search -> {
+                    if (authManager.isLoggedIn()) {
+                        replaceFragment(ResearchListFragment())
+                    } else {
+                        replaceFragment(LoginFragment())
+                    }
                     true
                 }
                 R.id.profile -> {
