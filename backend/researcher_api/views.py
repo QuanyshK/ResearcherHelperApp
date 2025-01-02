@@ -14,21 +14,17 @@ def get_scihub_pdf_link(doi):
         response.raise_for_status()
         
         soup = BeautifulSoup(response.content, 'html.parser')
-        
         pdf_embed = soup.find('embed', {'type': 'application/pdf'})
-        pdf_iframe = soup.find('iframe')
-        pdf_object = soup.find('object', {'type': 'application/pdf'})
 
-        for element in [pdf_embed, pdf_iframe, pdf_object]:
-            if element:
-                pdf_src = element.get('src')
-                full_pdf_url = f"https:{pdf_src}" if pdf_src.startswith("//") else pdf_src
-                return full_pdf_url
+        if pdf_embed:
+            pdf_src = pdf_embed['src']
+            full_pdf_url = f"https:{pdf_src}" if pdf_src.startswith("//") else pdf_src
+            return scihub_url, full_pdf_url
         
-        return None
+        return scihub_url, None 
     
     except requests.RequestException as e:
-        return None
+        return None, None
 
 @api_view(['POST'])
 def generate_scihub_link(request):
@@ -39,14 +35,18 @@ def generate_scihub_link(request):
     
     article, created = Article.objects.get_or_create(doi=doi)
     
-    if not article.hacked_link:
-        pdf_link = get_scihub_pdf_link(doi)
-        if pdf_link:
-            article.hacked_link = pdf_link
-            article.pdf_url = pdf_link
+    if not article.hacked_link or not article.pdf_link:
+        hacked_link, pdf_link = get_scihub_pdf_link(doi)
+        if hacked_link:
+            article.hacked_link = hacked_link
+            article.pdf_link = pdf_link  # Сохраняем pdf_link
             article.save()
         else:
             return Response({"error": "Failed to retrieve PDF link"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    serializer = ArticleSerializer(article)
-    return Response(serializer.data)
+    return Response({
+        "id": article.id,
+        "doi": article.doi,
+        "hacked_link": article.hacked_link,
+        "pdf_link": article.pdf_link  # Возвращаем pdf_link в ответ
+    })
