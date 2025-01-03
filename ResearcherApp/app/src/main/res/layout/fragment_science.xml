@@ -11,7 +11,7 @@
         android:id="@+id/editTextDoi"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter DOI or URL"
+        android:hint="Enter DOI"
         android:textColorHint="@color/dark_gray"
         android:textColor="@color/primaryTextColor"
         android:background="@drawable/edittext_background"
@@ -27,4 +27,20 @@
         android:textColor="@android:color/white"
         android:padding="16dp"
         android:layout_marginBottom="24dp"/>
+
+    <TextView
+        android:id="@+id/recent_requests_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Recent Requests"
+        android:textSize="18sp"
+        android:textColor="@color/primaryTextColor"
+        android:layout_marginBottom="12dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewRequests"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/card_background"/>
 </LinearLayout>

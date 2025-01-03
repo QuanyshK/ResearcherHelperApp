@@ -40,7 +40,7 @@
             android:layout_height="wrap_content"
             android:text="View Details"
             android:textColor="@android:color/white"
-            android:backgroundTint="@color/primary"
+            android:backgroundTint="@color/black"
             android:padding="12dp"
             android:layout_gravity="end"
             app:cornerRadius="12dp"/>

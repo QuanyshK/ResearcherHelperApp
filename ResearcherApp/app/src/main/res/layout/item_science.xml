@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/articleTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Title: Example"
+        android:textSize="16sp"
+        android:textColor="@color/primaryTextColor"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/articleLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DOI: 10.1234/example.doi"
+        android:textSize="14sp"
+        android:textColor="@color/dark_gray"/>
+</LinearLayout>

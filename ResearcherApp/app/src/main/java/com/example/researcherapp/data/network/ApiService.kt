@@ -1,5 +1,6 @@
 package com.example.researcherapp.data.network
 
+import com.example.researcherapp.data.model.Article
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -49,5 +50,6 @@ interface ApiService {
     @POST("researcher_api/generate-link/")
     fun generateScienceLink(@Body params: Map<String, String>): Call<Map<String, String>>
 
-
+    @GET("researcher_api/articles/")
+    fun getArticles(): Call<List<Article>>
 }

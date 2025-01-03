@@ -6,9 +6,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.example.researcherapp.R
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.researcherapp.data.model.Article
 import com.example.researcherapp.data.network.ApiClient
 import com.example.researcherapp.databinding.FragmentScienceBinding
+import com.example.researcherapp.ui.adapter.ScienceAdapter
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -18,6 +20,8 @@ class ScienceFragment : Fragment() {
     private var _binding: FragmentScienceBinding? = null
     private val binding get() = _binding!!
     private val apiService = ApiClient.instance
+    private lateinit var scienceAdapter: ScienceAdapter
+    private var articles: List<Article> = listOf()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,6 +35,9 @@ class ScienceFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupRecyclerView()
+        fetchArticles()
+
         binding.buttonGenerateLink.setOnClickListener {
             val doi = binding.editTextDoi.text.toString().trim()
             if (doi.isNotEmpty()) {
@@ -41,25 +48,38 @@ class ScienceFragment : Fragment() {
         }
     }
 
+    private fun setupRecyclerView() {
+        binding.recyclerViewRequests.layoutManager = LinearLayoutManager(requireContext())
+        scienceAdapter = ScienceAdapter(articles)
+        binding.recyclerViewRequests.adapter = scienceAdapter
+    }
+
+    private fun fetchArticles() {
+        apiService.getArticles().enqueue(object : Callback<List<Article>> {
+            override fun onResponse(call: Call<List<Article>>, response: Response<List<Article>>) {
+                if (response.isSuccessful && response.body() != null) {
+                    articles = response.body()!!
+                    scienceAdapter = ScienceAdapter(articles)
+                    binding.recyclerViewRequests.adapter = scienceAdapter
+                }
+            }
+
+            override fun onFailure(call: Call<List<Article>>, t: Throwable) {
+                Toast.makeText(requireContext(), "Failed to load articles", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
     private fun generatePdfLink(doi: String) {
         val requestBody = mapOf("doi" to doi)
-        val call = apiService.generateScienceLink(requestBody)
-
-        call.enqueue(object : Callback<Map<String, String>> {
-            override fun onResponse(
-                call: Call<Map<String, String>>,
-                response: Response<Map<String, String>>
-            ) {
+        apiService.generateScienceLink(requestBody).enqueue(object : Callback<Map<String, String>> {
+            override fun onResponse(call: Call<Map<String, String>>, response: Response<Map<String, String>>) {
                 if (response.isSuccessful && response.body() != null) {
-                    val data = response.body()
-                    val pdfLink =data?.get("pdf_link")
-
-                    if (pdfLink != null) {
+                    val pdfLink = response.body()?.get("pdf_link")
+                    pdfLink?.let {
                         Toast.makeText(requireContext(), "PDF Link Generated", Toast.LENGTH_SHORT).show()
-                        openInPdfViewer(pdfLink)
-                    } else {
-                        Toast.makeText(requireContext(), "PDF link not found", Toast.LENGTH_SHORT).show()
-                    }
+                        openInPdfViewer(it)
+                    } ?: Toast.makeText(requireContext(), "PDF link not found", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
                 }
@@ -78,7 +98,7 @@ class ScienceFragment : Fragment() {
             }
         }
         requireActivity().supportFragmentManager.beginTransaction()
-            .replace(R.id.frame_layout, fragment)
+            .replace(com.example.researcherapp.R.id.frame_layout, fragment)
             .addToBackStack(null)
             .commit()
     }
