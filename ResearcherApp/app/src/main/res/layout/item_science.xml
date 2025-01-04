@@ -12,7 +12,8 @@
         android:text="Title: Example"
         android:textSize="16sp"
         android:textColor="@color/primaryTextColor"
-        android:layout_marginBottom="4dp"/>
+        android:layout_marginBottom="4dp"
+        android:textIsSelectable="true"/>
 
     <TextView
         android:id="@+id/articleLink"
@@ -20,5 +21,6 @@
         android:layout_height="wrap_content"
         android:text="DOI: 10.1234/example.doi"
         android:textSize="14sp"
-        android:textColor="@color/dark_gray"/>
+        android:textColor="@color/dark_gray"
+        android:textIsSelectable="true"/>
 </LinearLayout>
