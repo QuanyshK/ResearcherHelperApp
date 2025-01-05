@@ -21,7 +21,6 @@ class ScienceFragment : Fragment() {
     private val binding get() = _binding!!
     private val apiService = ApiClient.instance
     private lateinit var scienceAdapter: ScienceAdapter
-    private var articles: List<Article> = listOf()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,14 +42,14 @@ class ScienceFragment : Fragment() {
             if (doi.isNotEmpty()) {
                 generatePdfLink(doi)
             } else {
-                Toast.makeText(requireContext(), "Enter DOI or URL", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Enter DOI", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun setupRecyclerView() {
         binding.recyclerViewRequests.layoutManager = LinearLayoutManager(requireContext())
-        scienceAdapter = ScienceAdapter(articles)
+        scienceAdapter = ScienceAdapter()
         binding.recyclerViewRequests.adapter = scienceAdapter
     }
 
@@ -58,9 +57,7 @@ class ScienceFragment : Fragment() {
         apiService.getArticles().enqueue(object : Callback<List<Article>> {
             override fun onResponse(call: Call<List<Article>>, response: Response<List<Article>>) {
                 if (response.isSuccessful && response.body() != null) {
-                    articles = response.body()!!
-                    scienceAdapter = ScienceAdapter(articles)
-                    binding.recyclerViewRequests.adapter = scienceAdapter
+                    scienceAdapter.submitList(response.body())
                 }
             }
 

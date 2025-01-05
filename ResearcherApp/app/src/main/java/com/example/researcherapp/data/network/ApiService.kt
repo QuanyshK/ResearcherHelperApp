@@ -30,6 +30,9 @@ interface ApiService {
     @GET("users/profile/")
     fun getProfile(): Call<ProfileResponse>
 
+    @POST("users/google-login/")
+    fun googleLogin(@Body params: Map<String, String>): Call<TokenResponse>
+
     @Multipart
     @POST("ai/send/")
     fun sendMessage(

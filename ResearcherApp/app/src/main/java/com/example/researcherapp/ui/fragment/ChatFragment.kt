@@ -57,15 +57,13 @@ class ChatFragment : Fragment() {
         }
         return binding.root
     }
-
     private fun setupRecyclerView() {
-        chatAdapter = ChatAdapter(messages)
+        chatAdapter = ChatAdapter()
         binding.recyclerViewChat.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = chatAdapter
         }
     }
-
     private fun setupFilePicker() {
         binding.buttonAttach.setOnClickListener {
             val intent = Intent(Intent.ACTION_GET_CONTENT)
@@ -95,10 +93,10 @@ class ChatFragment : Fragment() {
         ApiClient.instance.getChatList().enqueue(object : Callback<List<ChatMessage>> {
             override fun onResponse(call: Call<List<ChatMessage>>, response: Response<List<ChatMessage>>) {
                 if (response.isSuccessful) {
-                    messages.clear()
                     response.body()?.let {
-                        messages.addAll(it)
-                        chatAdapter.notifyDataSetChanged()
+                        chatAdapter.submitList(it) {
+                            binding.recyclerViewChat.scrollToPosition(it.size - 1)
+                        }
                     }
                 } else {
                     if (response.code() == 401) {
@@ -115,6 +113,7 @@ class ChatFragment : Fragment() {
             }
         })
     }
+
 
     private fun setupSendButton() {
         binding.buttonSend.setOnClickListener {

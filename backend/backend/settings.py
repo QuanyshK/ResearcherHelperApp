@@ -157,6 +157,11 @@ AUTHENTICATION_BACKENDS = [
 SITE_ID = 1
 
 
+CORS_ORIGIN_WHITELIST = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -176,6 +181,9 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': False,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+
+LOGIN_REDIRECT_URL = '/profile/'
 
 AUTH_USER_MODEL = 'users.User'
 

@@ -1,74 +1,91 @@
 package com.example.researcherapp.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.researcherapp.R
 import com.example.researcherapp.data.model.ArxivEntry
 import com.example.researcherapp.databinding.ItemArticleBinding
-import com.example.researcherapp.databinding.ItemLoadingFooterBinding
-
-private const val VIEW_TYPE_ITEM = 0
-private const val VIEW_TYPE_LOADING = 1
 
 class ArxivAdapter(
     private val onDetailsClick: (ArxivEntry) -> Unit
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+) : ListAdapter<ArxivEntry, RecyclerView.ViewHolder>(ArxivItemCallback()) {
 
-    private val items = mutableListOf<ArxivEntry?>()
-
-    fun submitList(newItems: List<ArxivEntry>, isLoading: Boolean) {
-        items.clear()
-        items.addAll(newItems)
-        if (isLoading) {
-            items.add(null)
-        }
-        notifyDataSetChanged()
+    companion object {
+        private const val VIEW_TYPE_ITEM = 0
+        private const val VIEW_TYPE_LOADING = 1
     }
 
-    fun getCurrentList(): List<ArxivEntry> {
-        return items.filterNotNull()
-    }
+    private var isLoading = false
 
     override fun getItemViewType(position: Int): Int {
-        return if (items[position] == null) VIEW_TYPE_LOADING else VIEW_TYPE_ITEM
+        return if (position == itemCount - 1 && isLoading) VIEW_TYPE_LOADING else VIEW_TYPE_ITEM
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return if (viewType == VIEW_TYPE_ITEM) {
-            val binding = ItemArticleBinding.inflate(
-                LayoutInflater.from(parent.context), parent, false
+            ViewHolder(
+                ItemArticleBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent, false
+                )
             )
-            ArxivViewHolder(binding)
         } else {
-            val binding = ItemLoadingFooterBinding.inflate(
-                LayoutInflater.from(parent.context), parent, false
+            LoadingViewHolder(
+                LayoutInflater.from(parent.context).inflate(R.layout.item_loading_footer, parent, false)
             )
-            LoadingViewHolder(binding)
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ArxivViewHolder) {
-            items[position]?.let { holder.bind(it) }
+        if (holder is ViewHolder) {
+            holder.bind(getItem(position))
         }
     }
 
-    override fun getItemCount(): Int = items.size
+    override fun getItemCount(): Int {
+        return super.getItemCount() + if (isLoading) 1 else 0
+    }
 
-    inner class ArxivViewHolder(private val binding: ItemArticleBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+    fun setLoading(isLoading: Boolean) {
+        val previousState = this.isLoading
+        this.isLoading = isLoading
+
+        if (isLoading && !previousState) {
+            notifyItemInserted(itemCount - 1)
+        } else if (!isLoading && previousState) {
+            notifyItemRemoved(itemCount)
+        }
+    }
+
+    inner class ViewHolder(
+        private val binding: ItemArticleBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(entry: ArxivEntry) {
-            binding.textViewTitle.text = entry.title
-            binding.textViewSummary.text = entry.summary
-
-            binding.buttonDownload.text = "Details"
-            binding.buttonDownload.setOnClickListener {
-                onDetailsClick(entry)
+            with(binding) {
+                textViewTitle.text = entry.title
+                textViewSummary.text = entry.summary
+                buttonDownload.text = "Details"
+                buttonDownload.setOnClickListener {
+                    onDetailsClick(entry)
+                }
             }
         }
     }
 
-    inner class LoadingViewHolder(binding: ItemLoadingFooterBinding) :
-        RecyclerView.ViewHolder(binding.root)
+    class LoadingViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+}
+
+private class ArxivItemCallback : DiffUtil.ItemCallback<ArxivEntry>() {
+    override fun areItemsTheSame(oldItem: ArxivEntry, newItem: ArxivEntry): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: ArxivEntry, newItem: ArxivEntry): Boolean {
+        return oldItem == newItem
+    }
 }

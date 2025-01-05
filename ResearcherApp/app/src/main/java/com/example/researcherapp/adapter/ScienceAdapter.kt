@@ -2,12 +2,14 @@ package com.example.researcherapp.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.researcherapp.data.model.Article
 import com.example.researcherapp.databinding.ItemScienceBinding
 
-class ScienceAdapter(private val articles: List<Article>) :
-    RecyclerView.Adapter<ScienceAdapter.ArticleViewHolder>() {
+class ScienceAdapter :
+    ListAdapter<Article, ScienceAdapter.ArticleViewHolder>(ArticleDiffCallback()) {
 
     inner class ArticleViewHolder(private val binding: ItemScienceBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -24,8 +26,16 @@ class ScienceAdapter(private val articles: List<Article>) :
     }
 
     override fun onBindViewHolder(holder: ArticleViewHolder, position: Int) {
-        holder.bind(articles[position])
+        holder.bind(getItem(position))
+    }
+}
+
+class ArticleDiffCallback : DiffUtil.ItemCallback<Article>() {
+    override fun areItemsTheSame(oldItem: Article, newItem: Article): Boolean {
+        return oldItem.id == newItem.id
     }
 
-    override fun getItemCount(): Int = articles.size
+    override fun areContentsTheSame(oldItem: Article, newItem: Article): Boolean {
+        return oldItem == newItem
+    }
 }

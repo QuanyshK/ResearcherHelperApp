@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.researcherapp.R
 import com.example.researcherapp.data.database.AuthManager
@@ -47,7 +48,11 @@ class ProfileFragment : Fragment() {
             }
 
             override fun onFailure(call: Call<ProfileResponse>, t: Throwable) {
-                logout()
+                if (isAdded) {
+                    logout()
+                } else {
+                    Toast.makeText(context, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         })
     }
@@ -61,10 +66,14 @@ class ProfileFragment : Fragment() {
     private fun logout() {
         authManager.clearAuthToken()
 
-        parentFragmentManager.popBackStack()
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.frame_layout, LoginFragment())
-            .commit()
+
+        activity?.let {
+            it.supportFragmentManager.beginTransaction()
+                .replace(R.id.frame_layout, LoginFragment())
+                .commit()
+        } ?: run {
+            Toast.makeText(context, "Fragment not attached", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onDestroyView() {

@@ -1,33 +1,33 @@
 {
   "project_info": {
-    "project_number": "69948436436",
-    "project_id": "researcherapp-e1e10",
-    "storage_bucket": "researcherapp-e1e10.firebasestorage.app"
+    "project_number": "1091665517781",
+    "project_id": "researcherhelper-9110a",
+    "storage_bucket": "researcherhelper-9110a.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:69948436436:android:bf280b0222b590c3927041",
+        "mobilesdk_app_id": "1:1091665517781:android:3088d1033a75c71a4c965c",
         "android_client_info": {
           "package_name": "com.example.researcherapp"
         }
       },
       "oauth_client": [
         {
-          "client_id": "69948436436-s84p8pvnt42i5h18t6bu6rpchct7ko4u.apps.googleusercontent.com",
+          "client_id": "1091665517781-0av8sq7npu47k0gv4qsvdeacq6qusbjf.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDwBFrGJRELZu3CPaCS9zxUxXDuhIrMa7U"
+          "current_key": "AIzaSyB3Li60_KvlsbpsJP8LfwfQG25JBx7HXqY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "69948436436-s84p8pvnt42i5h18t6bu6rpchct7ko4u.apps.googleusercontent.com",
+              "client_id": "1091665517781-0av8sq7npu47k0gv4qsvdeacq6qusbjf.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

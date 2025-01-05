@@ -80,7 +80,7 @@ class ResearchListFragment : Fragment() {
 
     private fun fetchArticles(query: String) {
         isLoading = true
-        adapter.submitList(adapter.getCurrentList(), isLoading = true)
+        adapter.setLoading(true)
 
         ArxivClient.instance.searchArticles(query, currentPage * pageSize, pageSize)
             .enqueue(object : Callback<ArxivFeed> {
@@ -88,7 +88,8 @@ class ResearchListFragment : Fragment() {
                     isLoading = false
                     if (response.isSuccessful) {
                         val entries = response.body()?.entry ?: emptyList()
-                        adapter.submitList(adapter.getCurrentList() + entries, false)
+                        adapter.submitList(adapter.getCurrentList() + entries)
+                        adapter.setLoading(false)  // Исправлено, убран именованный аргумент
                         if (entries.size < pageSize) {
                             isLastPage = true
                         } else {
@@ -102,6 +103,7 @@ class ResearchListFragment : Fragment() {
 
                 override fun onFailure(call: Call<ArxivFeed>, t: Throwable) {
                     isLoading = false
+                    adapter.setLoading(false)
                     Toast.makeText(context, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
                 }
             })
@@ -110,7 +112,7 @@ class ResearchListFragment : Fragment() {
     private fun resetPagination() {
         currentPage = 0
         isLastPage = false
-        adapter.submitList(emptyList(), false)
+        adapter.submitList(emptyList())
     }
 
     private fun openDetailsFragment(entry: ArxivEntry) {
