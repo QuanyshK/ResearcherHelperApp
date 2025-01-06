@@ -3,7 +3,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.contrib.auth import get_user_model
-
+from django.utils.timezone import now
+from django.db.models import Count
+from datetime import timedelta
 from .services import GeminiService
 from .models import ChatMessage
 from .serializers import ChatMessageSerializer, ChatCreateSerializer
@@ -40,8 +42,19 @@ class ChatMessageCreateView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def post(self, request, *args, **kwargs):
-        serializer = ChatCreateSerializer(data=request.data)
+        today = now().date()
+        user_request_count = ChatMessage.objects.filter(
+            user=request.user,
+            created_at__date=today
+        ).count()
 
+        if user_request_count >= 20:
+            return Response(
+                {"error": "Daily request limit (20) reached."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
+        serializer = ChatCreateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -53,15 +66,14 @@ class ChatMessageCreateView(APIView):
         if file_obj:
             filename = file_obj.name
             file_path = os.path.join('/tmp', filename)
-            file_name = file_obj.name  
-            
+            file_name = file_obj.name
+
             with open(file_path, 'wb+') as f:
                 for chunk in file_obj.chunks():
                     f.write(chunk)
 
             if filename.lower().endswith('.pdf'):
                 text = extract_text_from_pdf(file_path)
-
             elif filename.lower().endswith('.docx'):
                 text = extract_text_from_docx(file_path)
 
@@ -80,12 +92,12 @@ class ChatMessageCreateView(APIView):
                 user=request.user,
                 user_message=text,
                 bot_response=summary,
-                file_name=file_name  
+                file_name=file_name
             )
             return Response(ChatMessageSerializer(chat).data, status=status.HTTP_201_CREATED)
-        
         except Exception as e:
             return Response({"error": f"Failed to save chat: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 

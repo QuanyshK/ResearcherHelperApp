@@ -20,6 +20,7 @@ import com.example.researcherapp.databinding.FragmentChatBinding
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -57,6 +58,7 @@ class ChatFragment : Fragment() {
         }
         return binding.root
     }
+
     private fun setupRecyclerView() {
         chatAdapter = ChatAdapter()
         binding.recyclerViewChat.apply {
@@ -64,6 +66,7 @@ class ChatFragment : Fragment() {
             adapter = chatAdapter
         }
     }
+
     private fun setupFilePicker() {
         binding.buttonAttach.setOnClickListener {
             val intent = Intent(Intent.ACTION_GET_CONTENT)
@@ -94,8 +97,10 @@ class ChatFragment : Fragment() {
             override fun onResponse(call: Call<List<ChatMessage>>, response: Response<List<ChatMessage>>) {
                 if (response.isSuccessful) {
                     response.body()?.let {
-                        chatAdapter.submitList(it) {
-                            binding.recyclerViewChat.scrollToPosition(it.size - 1)
+                        messages.clear()
+                        messages.addAll(it)
+                        chatAdapter.submitList(messages.toList()) {
+                            binding.recyclerViewChat.scrollToPosition(messages.size - 1)
                         }
                     }
                 } else {
@@ -114,7 +119,6 @@ class ChatFragment : Fragment() {
         })
     }
 
-
     private fun setupSendButton() {
         binding.buttonSend.setOnClickListener {
             val message = binding.editTextMessage.text.toString()
@@ -130,7 +134,6 @@ class ChatFragment : Fragment() {
             }
         }
     }
-
 
     private fun sendMessage(message: String) {
         val messageBody = RequestBody.create("text/plain".toMediaTypeOrNull(), message)
@@ -159,8 +162,9 @@ class ChatFragment : Fragment() {
         )
 
         messages.add(userMessage)
-        chatAdapter.notifyItemInserted(messages.size - 1)
-        binding.recyclerViewChat.scrollToPosition(messages.size - 1)
+        chatAdapter.submitList(messages.toList()) {
+            binding.recyclerViewChat.scrollToPosition(messages.size - 1)
+        }
 
         ApiClient.instance.sendMessage(messageBody, filePart, fileNameBody)
             .enqueue(object : Callback<ChatMessage> {
@@ -170,9 +174,11 @@ class ChatFragment : Fragment() {
                             val index = messages.indexOf(userMessage)
                             if (index != -1) {
                                 messages[index] = botResponse.copy(user_message = displayMessage)
-                                chatAdapter.notifyItemChanged(index)
+                                chatAdapter.submitList(messages.toList())
                             }
                         }
+                    } else {
+                        handleServerError(response)
                     }
                 }
 
@@ -180,27 +186,48 @@ class ChatFragment : Fragment() {
                     val index = messages.indexOf(userMessage)
                     if (index != -1) {
                         messages[index] = userMessage.copy(bot_response = "Failed to get response.")
-                        chatAdapter.notifyItemChanged(index)
+                        chatAdapter.submitList(messages.toList())
                     }
                     Toast.makeText(requireContext(), "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
                 }
             })
     }
 
-
-
-
-    private fun getFileName(uri: Uri): String? {
-        var name: String? = null
-        val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
-        cursor?.use {
-            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (nameIndex != -1) {
-                it.moveToFirst()
-                name = it.getString(nameIndex)
+    private fun handleServerError(response: Response<ChatMessage>) {
+        val errorBody = response.errorBody()?.string()
+        when (response.code()) {
+            429 -> {
+                val errorMessage = parseErrorMessage(errorBody)
+                showLimitExceededDialog(errorMessage)
             }
         }
-        return name ?: uri.lastPathSegment
+    }
+
+    private fun showLimitExceededDialog(errorMessage: String) {
+        val dialogBuilder = android.app.AlertDialog.Builder(requireContext())
+        dialogBuilder.setTitle("Request Limit Reached")
+        dialogBuilder.setMessage(errorMessage)
+        dialogBuilder.setPositiveButton("OK") { dialog, _ ->
+            dialog.dismiss()
+        }
+        dialogBuilder.show()
+    }
+
+    private fun parseErrorMessage(errorBody: String?): String {
+        return try {
+            val jsonObject = JSONObject(errorBody ?: "")
+            jsonObject.optString("error", "You have reached the daily limit.")
+        } catch (e: Exception) {
+            "You have reached the daily limit."
+        }
+    }
+
+    private fun getFileName(uri: Uri): String? {
+        val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
+        return cursor?.use {
+            it.moveToFirst()
+            it.getString(it.getColumnIndex(OpenableColumns.DISPLAY_NAME))
+        } ?: uri.lastPathSegment
     }
 
     private fun getCurrentTime(): String {
