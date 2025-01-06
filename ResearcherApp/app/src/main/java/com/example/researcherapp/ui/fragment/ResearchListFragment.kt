@@ -6,34 +6,29 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.researcherapp.R
 import com.example.researcherapp.adapter.ArxivAdapter
 import com.example.researcherapp.data.model.ArxivEntry
-import com.example.researcherapp.data.model.ArxivFeed
-import com.example.researcherapp.data.network.ArxivClient
 import com.example.researcherapp.databinding.FragmentResearchListBinding
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import com.example.researcherapp.ui.mvvm.ArticlesState
+import com.example.researcherapp.ui.mvvm.ResearchViewModel
 
 class ResearchListFragment : Fragment() {
 
     private var _binding: FragmentResearchListBinding? = null
     private val binding get() = _binding!!
+    private lateinit var viewModel: ResearchViewModel
     private lateinit var adapter: ArxivAdapter
-
-    private var isLoading = false
-    private var currentPage = 0
-    private val pageSize = 10
-    private var isLastPage = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentResearchListBinding.inflate(inflater, container, false)
+        viewModel = ViewModelProvider(this).get(ResearchViewModel::class.java)
         return binding.root
     }
 
@@ -50,8 +45,8 @@ class ResearchListFragment : Fragment() {
         binding.searchButton.setOnClickListener {
             val query = binding.searchEditText.text.toString()
             if (query.isNotEmpty()) {
-                resetPagination()
-                fetchArticles(query)
+                viewModel.resetPagination()
+                viewModel.searchArticles(query)
             } else {
                 Toast.makeText(context, "Please enter a search term", Toast.LENGTH_SHORT).show()
             }
@@ -66,53 +61,37 @@ class ResearchListFragment : Fragment() {
                 val totalItemCount = layoutManager.itemCount
                 val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
 
-                if (!isLoading && !isLastPage) {
+                if (!viewModel.isLoading && !viewModel.isLastPage) {
                     if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount
                         && firstVisibleItemPosition >= 0
-                        && totalItemCount >= pageSize
+                        && totalItemCount >= viewModel.pageSize
                     ) {
-                        fetchArticles(binding.searchEditText.text.toString())
+                        viewModel.searchArticles(binding.searchEditText.text.toString())
                     }
                 }
             }
         })
+
+        observeViewModel()
     }
 
-    private fun fetchArticles(query: String) {
-        isLoading = true
-        adapter.setLoading(true)
-
-        ArxivClient.instance.searchArticles(query, currentPage * pageSize, pageSize)
-            .enqueue(object : Callback<ArxivFeed> {
-                override fun onResponse(call: Call<ArxivFeed>, response: Response<ArxivFeed>) {
-                    isLoading = false
-                    if (response.isSuccessful) {
-                        val entries = response.body()?.entry ?: emptyList()
-                        adapter.submitList(adapter.getCurrentList() + entries)
-                        adapter.setLoading(false)  // Исправлено, убран именованный аргумент
-                        if (entries.size < pageSize) {
-                            isLastPage = true
-                        } else {
-                            currentPage++
-                        }
-                    } else {
-                        Toast.makeText(context, "Failed to load articles", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-                }
-
-                override fun onFailure(call: Call<ArxivFeed>, t: Throwable) {
-                    isLoading = false
+    private fun observeViewModel() {
+        viewModel.articlesState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is ArticlesState.Loading -> adapter.setLoading(true)
+                is ArticlesState.Success -> {
                     adapter.setLoading(false)
-                    Toast.makeText(context, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
+                    adapter.submitList(adapter.getCurrentList() + state.articles)
                 }
-            })
-    }
-
-    private fun resetPagination() {
-        currentPage = 0
-        isLastPage = false
-        adapter.submitList(emptyList())
+                is ArticlesState.Error -> {
+                    adapter.setLoading(false)
+                    Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                }
+                is ArticlesState.Reset -> {
+                    adapter.submitList(emptyList())
+                }
+            }
+        }
     }
 
     private fun openDetailsFragment(entry: ArxivEntry) {

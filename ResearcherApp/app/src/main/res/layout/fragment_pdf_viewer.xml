@@ -4,8 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.fragment.PdfViewerFragment"
->
+    tools:context=".ui.fragment.PdfViewerFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,7 +16,6 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:background="@drawable/gradient_background"
             android:elevation="6dp"
             android:layout_margin="8dp">
 
@@ -28,7 +26,6 @@
                 android:background="@color/primaryTextColor"/>
         </FrameLayout>
 
-        <!-- Bottom Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -49,11 +46,11 @@
                 app:cornerRadius="12dp"/>
 
             <Button
-                android:id="@+id/buttonClose"
+                android:id="@+id/buttonBack"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Close"
+                android:text="Back"
                 android:textColor="@color/primaryTextColor"
                 android:backgroundTint="@color/buttonColor"
                 android:padding="12dp"

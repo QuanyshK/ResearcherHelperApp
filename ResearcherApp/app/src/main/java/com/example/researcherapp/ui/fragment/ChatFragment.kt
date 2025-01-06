@@ -10,35 +10,23 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.researcherapp.R
 import com.example.researcherapp.adapter.ChatAdapter
 import com.example.researcherapp.data.database.AuthManager
-import com.example.researcherapp.data.model.ChatMessage
-import com.example.researcherapp.data.network.ApiClient
 import com.example.researcherapp.databinding.FragmentChatBinding
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
-import org.json.JSONObject
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.text.SimpleDateFormat
-import java.util.Locale
+import com.example.researcherapp.ui.mvvm.ChatListState
+import com.example.researcherapp.ui.mvvm.ChatViewModel
+import com.example.researcherapp.ui.mvvm.SendMessageState
 
 class ChatFragment : Fragment() {
 
     private var _binding: FragmentChatBinding? = null
     private val binding get() = _binding!!
-    private lateinit var authManager: AuthManager
     private lateinit var chatAdapter: ChatAdapter
-    private val messages = mutableListOf<ChatMessage>()
-    private var selectedFile: Uri? = null
-    private var selectedFileName: String? = null
+    private val viewModel by lazy { ViewModelProvider(this).get(ChatViewModel::class.java) }
+    private lateinit var authManager: AuthManager
     private val PICK_FILE_REQUEST = 1
 
     override fun onCreateView(
@@ -46,17 +34,21 @@ class ChatFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentChatBinding.inflate(inflater, container, false)
-        authManager = AuthManager(requireContext().applicationContext)
+        return binding.root
+    }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        authManager = AuthManager(requireContext().applicationContext)
         if (!authManager.isLoggedIn()) {
             redirectToLogin()
         } else {
             setupRecyclerView()
-            fetchChatHistory()
-            setupSendButton()
+            setupObservers()
             setupFilePicker()
+            setupSendButton()
+            viewModel.fetchChatHistory()
         }
-        return binding.root
     }
 
     private fun setupRecyclerView() {
@@ -64,6 +56,36 @@ class ChatFragment : Fragment() {
         binding.recyclerViewChat.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = chatAdapter
+        }
+    }
+
+    private fun setupObservers() {
+        viewModel.chatListState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is ChatListState.Success -> {
+                    chatAdapter.submitList(state.items) {
+                        binding.recyclerViewChat.scrollToPosition(state.items.size - 1)
+                    }
+                }
+                is ChatListState.Error -> {
+                    Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                }
+                else -> {}
+            }
+        }
+
+        viewModel.sendMessageState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is SendMessageState.Success -> {
+                    chatAdapter.submitList(viewModel.messages.toList()) {
+                        binding.recyclerViewChat.scrollToPosition(viewModel.messages.size - 1)
+                    }
+                }
+                is SendMessageState.Error -> {
+                    Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                }
+                else -> {}
+            }
         }
     }
 
@@ -82,143 +104,25 @@ class ChatFragment : Fragment() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PICK_FILE_REQUEST && resultCode == Activity.RESULT_OK) {
-            selectedFile = data?.data
+            val selectedFile = data?.data
             selectedFile?.let {
-                selectedFileName = getFileName(it)
-                binding.editTextMessage.setText(selectedFileName)
+                viewModel.setSelectedFile(it, getFileName(it))
+                binding.editTextMessage.setText(viewModel.selectedFileName)
                 binding.editTextMessage.isEnabled = false
-                Toast.makeText(requireContext(), "File Selected: $selectedFileName", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    private fun fetchChatHistory() {
-        ApiClient.instance.getChatList().enqueue(object : Callback<List<ChatMessage>> {
-            override fun onResponse(call: Call<List<ChatMessage>>, response: Response<List<ChatMessage>>) {
-                if (response.isSuccessful) {
-                    response.body()?.let {
-                        messages.clear()
-                        messages.addAll(it)
-                        chatAdapter.submitList(messages.toList()) {
-                            binding.recyclerViewChat.scrollToPosition(messages.size - 1)
-                        }
-                    }
-                } else {
-                    if (response.code() == 401) {
-                        authManager.clearAuthToken()
-                        redirectToLogin()
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<List<ChatMessage>>, t: Throwable) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        })
     }
 
     private fun setupSendButton() {
         binding.buttonSend.setOnClickListener {
             val message = binding.editTextMessage.text.toString()
-            if (selectedFile != null || message.isNotBlank()) {
-                val displayMessage = selectedFileName ?: message
-                sendMessage(message)
+            if (message.isNotBlank() || viewModel.selectedFile != null) {
+                viewModel.sendMessage(message)
                 binding.editTextMessage.text.clear()
                 binding.editTextMessage.isEnabled = true
-                selectedFile = null
-                selectedFileName = null
             } else {
-                Toast.makeText(requireContext(), "Please write something or attach a file", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Enter a message or attach a file", Toast.LENGTH_SHORT).show()
             }
-        }
-    }
-
-    private fun sendMessage(message: String) {
-        val messageBody = RequestBody.create("text/plain".toMediaTypeOrNull(), message)
-        val fileNameBody = RequestBody.create("text/plain".toMediaTypeOrNull(), selectedFileName ?: "")
-
-        val filePart: MultipartBody.Part? = selectedFile?.let {
-            val inputStream: InputStream? = context?.contentResolver?.openInputStream(it)
-            val tempFile = File.createTempFile("upload", null, requireContext().cacheDir)
-            val outputStream = FileOutputStream(tempFile)
-            inputStream?.copyTo(outputStream)
-            inputStream?.close()
-            outputStream.close()
-
-            val requestFile = RequestBody.create(requireContext().contentResolver.getType(it)?.toMediaTypeOrNull(), tempFile)
-            MultipartBody.Part.createFormData("file", selectedFileName ?: "unknown", requestFile)
-        }
-
-        val displayMessage = selectedFileName ?: message
-
-        val userMessage = ChatMessage(
-            id = messages.size + 1,
-            user_message = displayMessage,
-            bot_response = "Processing...",
-            file_name = selectedFileName ?: "",
-            created_at = getCurrentTime()
-        )
-
-        messages.add(userMessage)
-        chatAdapter.submitList(messages.toList()) {
-            binding.recyclerViewChat.scrollToPosition(messages.size - 1)
-        }
-
-        ApiClient.instance.sendMessage(messageBody, filePart, fileNameBody)
-            .enqueue(object : Callback<ChatMessage> {
-                override fun onResponse(call: Call<ChatMessage>, response: Response<ChatMessage>) {
-                    if (response.isSuccessful) {
-                        response.body()?.let { botResponse ->
-                            val index = messages.indexOf(userMessage)
-                            if (index != -1) {
-                                messages[index] = botResponse.copy(user_message = displayMessage)
-                                chatAdapter.submitList(messages.toList())
-                            }
-                        }
-                    } else {
-                        handleServerError(response)
-                    }
-                }
-
-                override fun onFailure(call: Call<ChatMessage>, t: Throwable) {
-                    val index = messages.indexOf(userMessage)
-                    if (index != -1) {
-                        messages[index] = userMessage.copy(bot_response = "Failed to get response.")
-                        chatAdapter.submitList(messages.toList())
-                    }
-                    Toast.makeText(requireContext(), "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-                }
-            })
-    }
-
-    private fun handleServerError(response: Response<ChatMessage>) {
-        val errorBody = response.errorBody()?.string()
-        when (response.code()) {
-            429 -> {
-                val errorMessage = parseErrorMessage(errorBody)
-                showLimitExceededDialog(errorMessage)
-            }
-        }
-    }
-
-    private fun showLimitExceededDialog(errorMessage: String) {
-        val dialogBuilder = android.app.AlertDialog.Builder(requireContext())
-        dialogBuilder.setTitle("Request Limit Reached")
-        dialogBuilder.setMessage(errorMessage)
-        dialogBuilder.setPositiveButton("OK") { dialog, _ ->
-            dialog.dismiss()
-        }
-        dialogBuilder.show()
-    }
-
-    private fun parseErrorMessage(errorBody: String?): String {
-        return try {
-            val jsonObject = JSONObject(errorBody ?: "")
-            jsonObject.optString("error", "You have reached the daily limit.")
-        } catch (e: Exception) {
-            "You have reached the daily limit."
         }
     }
 
@@ -228,10 +132,6 @@ class ChatFragment : Fragment() {
             it.moveToFirst()
             it.getString(it.getColumnIndex(OpenableColumns.DISPLAY_NAME))
         } ?: uri.lastPathSegment
-    }
-
-    private fun getCurrentTime(): String {
-        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(java.util.Date())
     }
 
     private fun redirectToLogin() {

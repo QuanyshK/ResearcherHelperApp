@@ -6,20 +6,20 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.researcherapp.data.model.Article
-import com.example.researcherapp.data.network.ApiClient
+import com.example.researcherapp.R
 import com.example.researcherapp.databinding.FragmentScienceBinding
 import com.example.researcherapp.ui.adapter.ScienceAdapter
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import com.example.researcherapp.ui.mvvm.ArticleListState
+import com.example.researcherapp.ui.mvvm.PdfLinkState
+import com.example.researcherapp.ui.mvvm.ScienceViewModel
 
 class ScienceFragment : Fragment() {
 
     private var _binding: FragmentScienceBinding? = null
     private val binding get() = _binding!!
-    private val apiService = ApiClient.instance
+    private lateinit var viewModel: ScienceViewModel
     private lateinit var scienceAdapter: ScienceAdapter
 
     override fun onCreateView(
@@ -28,6 +28,10 @@ class ScienceFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentScienceBinding.inflate(inflater, container, false)
+        viewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
+        ).get(ScienceViewModel::class.java)
         return binding.root
     }
 
@@ -35,16 +39,18 @@ class ScienceFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
-        fetchArticles()
+        observeViewModel()
 
         binding.buttonGenerateLink.setOnClickListener {
             val doi = binding.editTextDoi.text.toString().trim()
             if (doi.isNotEmpty()) {
-                generatePdfLink(doi)
+                viewModel.generatePdfLink(doi)
             } else {
                 Toast.makeText(requireContext(), "Enter DOI", Toast.LENGTH_SHORT).show()
             }
         }
+
+        viewModel.fetchArticles()
     }
 
     private fun setupRecyclerView() {
@@ -53,51 +59,43 @@ class ScienceFragment : Fragment() {
         binding.recyclerViewRequests.adapter = scienceAdapter
     }
 
-    private fun fetchArticles() {
-        apiService.getArticles().enqueue(object : Callback<List<Article>> {
-            override fun onResponse(call: Call<List<Article>>, response: Response<List<Article>>) {
-                if (response.isSuccessful && response.body() != null) {
-                    scienceAdapter.submitList(response.body())
+    private fun observeViewModel() {
+        viewModel.articleListState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is ArticleListState.Loading -> {
                 }
-            }
-
-            override fun onFailure(call: Call<List<Article>>, t: Throwable) {
-                Toast.makeText(requireContext(), "Failed to load articles", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    private fun generatePdfLink(doi: String) {
-        val requestBody = mapOf("doi" to doi)
-        apiService.generateScienceLink(requestBody).enqueue(object : Callback<Map<String, String>> {
-            override fun onResponse(call: Call<Map<String, String>>, response: Response<Map<String, String>>) {
-                if (response.isSuccessful && response.body() != null) {
-                    val pdfLink = response.body()?.get("pdf_link")
-                    pdfLink?.let {
-                        Toast.makeText(requireContext(), "PDF Link Generated", Toast.LENGTH_SHORT).show()
-                        openInPdfViewer(it)
-                    } ?: Toast.makeText(requireContext(), "PDF link not found", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                is ArticleListState.Success -> {
+                    scienceAdapter.submitList(state.items)
                 }
-            }
-
-            override fun onFailure(call: Call<Map<String, String>>, t: Throwable) {
-                Toast.makeText(requireContext(), "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    private fun openInPdfViewer(pdfUrl: String) {
-        val fragment = PdfViewerFragment().apply {
-            arguments = Bundle().apply {
-                putString("pdfUrl", pdfUrl)
+                is ArticleListState.Error -> {
+                    Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                }
             }
         }
-        requireActivity().supportFragmentManager.beginTransaction()
-            .replace(com.example.researcherapp.R.id.frame_layout, fragment)
+
+        viewModel.pdfLinkState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is PdfLinkState.Loading -> {
+                    Toast.makeText(requireContext(), "Generating PDF link...", Toast.LENGTH_SHORT).show()
+                }
+                is PdfLinkState.Success -> {
+                    state.pdfLink.let {
+                        viewModel.openPdfViewer(requireActivity().supportFragmentManager, it)
+                    }
+                }
+                is PdfLinkState.Error -> {
+                    Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun replaceFragment(fragment: Fragment) {
+        parentFragmentManager.popBackStack()
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.frame_layout, fragment)
             .addToBackStack(null)
-            .commit()
+
     }
 
     override fun onDestroyView() {

@@ -33,7 +33,11 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.chat -> {
-                    replaceFragment(ChatFragment())
+                    if (authManager.isLoggedIn()) {
+                        replaceFragment(ChatFragment())
+                    } else {
+                        replaceFragment(LoginFragment())
+                    }
                     true
                 }
                 R.id.search -> {

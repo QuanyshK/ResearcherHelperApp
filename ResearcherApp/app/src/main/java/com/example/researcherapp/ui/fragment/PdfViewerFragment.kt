@@ -7,7 +7,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
+import com.example.researcherapp.R
 import com.example.researcherapp.databinding.FragmentPdfViewerBinding
 
 class PdfViewerFragment : Fragment() {
@@ -36,6 +39,9 @@ class PdfViewerFragment : Fragment() {
     private fun setupWebView() {
         binding.webView.apply {
             settings.javaScriptEnabled = true
+            settings.setSupportZoom(true)
+            settings.builtInZoomControls = true
+            settings.displayZoomControls = false
             setBackgroundColor(Color.TRANSPARENT)
             webViewClient = WebViewClient()
 
@@ -50,10 +56,11 @@ class PdfViewerFragment : Fragment() {
             pdfUrl?.let { binding.webView.loadUrl("https://docs.google.com/gview?embedded=true&url=$it") }
         }
 
-        binding.buttonClose.setOnClickListener {
+        binding.buttonBack.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()
