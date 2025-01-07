@@ -7,6 +7,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.researcherapp.R
+import com.example.researcherapp.data.database.AuthManager
 import com.example.researcherapp.databinding.FragmentScienceBinding
 import com.example.researcherapp.ui.adapter.ScienceAdapter
 import com.example.researcherapp.ui.mvvm.ScienceViewModel
@@ -41,6 +43,13 @@ class ScienceFragment : Fragment() {
             if (doi.isNotEmpty()) {
                 viewModel.generateLink(doi, parentFragmentManager)
             }
+        }
+        val authManager = AuthManager(requireContext())
+
+        if (!authManager.isLoggedIn()) {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.frame_layout, LoginFragment())
+                .commit()
         }
 
         viewModel.articles.observe(viewLifecycleOwner) { articles ->

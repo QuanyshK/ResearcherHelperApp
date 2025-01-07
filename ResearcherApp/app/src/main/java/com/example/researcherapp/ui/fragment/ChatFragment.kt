@@ -41,14 +41,15 @@ class ChatFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         authManager = AuthManager(requireContext().applicationContext)
         if (!authManager.isLoggedIn()) {
-            redirectToLogin()
-        } else {
-            setupRecyclerView()
-            setupObservers()
-            setupFilePicker()
-            setupSendButton()
-            viewModel.fetchChatHistory()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.frame_layout, LoginFragment())
+                .commit()
         }
+        setupRecyclerView()
+        setupObservers()
+        setupFilePicker()
+        setupSendButton()
+        viewModel.fetchChatHistory()
     }
 
     private fun setupRecyclerView() {
@@ -67,9 +68,11 @@ class ChatFragment : Fragment() {
                         binding.recyclerViewChat.scrollToPosition(state.items.size - 1)
                     }
                 }
+
                 is ChatListState.Error -> {
                     Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
                 }
+
                 else -> {}
             }
         }
@@ -81,9 +84,11 @@ class ChatFragment : Fragment() {
                         binding.recyclerViewChat.scrollToPosition(viewModel.messages.size - 1)
                     }
                 }
+
                 is SendMessageState.Error -> {
                     Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
                 }
+
                 else -> {}
             }
         }
@@ -95,7 +100,10 @@ class ChatFragment : Fragment() {
             intent.type = "*/*"
             intent.putExtra(
                 Intent.EXTRA_MIME_TYPES,
-                arrayOf("application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                arrayOf(
+                    "application/pdf",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
             )
             startActivityForResult(intent, PICK_FILE_REQUEST)
         }
@@ -121,7 +129,11 @@ class ChatFragment : Fragment() {
                 binding.editTextMessage.text.clear()
                 binding.editTextMessage.isEnabled = true
             } else {
-                Toast.makeText(requireContext(), "Enter a message or attach a file", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Enter a message or attach a file",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
@@ -134,11 +146,6 @@ class ChatFragment : Fragment() {
         } ?: uri.lastPathSegment
     }
 
-    private fun redirectToLogin() {
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.frame_layout, LoginFragment())
-            .commit()
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()

@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
 
         authManager = AuthManager(this)
 
-        replaceFragment(ChatFragment())
+        replaceFragment(ProfileFragment())
 
         setupBottomNavigation()
     }

@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.researcherapp.R
 import com.example.researcherapp.adapter.ArxivAdapter
+import com.example.researcherapp.data.database.AuthManager
 import com.example.researcherapp.data.model.ArxivEntry
 import com.example.researcherapp.databinding.FragmentResearchListBinding
 import com.example.researcherapp.ui.mvvm.ArticlesState
@@ -50,6 +51,13 @@ class ResearchListFragment : Fragment() {
             } else {
                 Toast.makeText(context, "Please enter a search term", Toast.LENGTH_SHORT).show()
             }
+        }
+        val authManager = AuthManager(requireContext())
+
+        if (!authManager.isLoggedIn()) {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.frame_layout, LoginFragment())
+                .commit()
         }
 
         binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
