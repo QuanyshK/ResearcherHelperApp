@@ -16,10 +16,10 @@ object ApiClient {
 
     private val client by lazy {
         OkHttpClient.Builder()
-            .callTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // Общий таймаут на вызов
-            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // Таймаут подключения
-            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // Таймаут на чтение данных
-            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // Таймаут на запись данных
+            .callTimeout(75, java.util.concurrent.TimeUnit.SECONDS)
+            .connectTimeout(75, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(75, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(75, java.util.concurrent.TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                 if (::authToken.isInitialized && authToken.isNotEmpty()) {
