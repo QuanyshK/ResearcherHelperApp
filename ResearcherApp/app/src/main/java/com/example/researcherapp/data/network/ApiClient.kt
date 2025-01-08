@@ -6,7 +6,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
-    private const val BASE_URL = "http://192.168.1.108:8000/"
+    private const val BASE_URL = "https://researcherhelper-service-965579816074.us-central1.run.app/"
 
     private lateinit var authToken: String
 

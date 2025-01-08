@@ -1,0 +1,26 @@
+services:
+  web:
+    build:
+      context: .
+    container_name: researcher_web
+    command: gunicorn --bind 0.0.0.0:8000 backend.wsgi:application
+    volumes:
+      - .:/app
+      - ./credentials.json:/app/credentials.json
+      - static_volume:/app/staticfiles
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials.json
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL_NAME: ${GEMINI_MODEL_NAME}
+
+volumes:
+  static_volume:

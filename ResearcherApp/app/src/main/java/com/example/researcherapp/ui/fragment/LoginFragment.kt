@@ -45,9 +45,6 @@ class LoginFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.googleSignInButton.setOnClickListener {
-            googleSignIn()
-        }
 
         binding.loginButton.setOnClickListener {
             handleLogin()
@@ -87,64 +84,6 @@ class LoginFragment : Fragment() {
             })
         }
     }
-
-    private fun googleSignIn() {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
-
-        val googleSignInClient = GoogleSignIn.getClient(requireActivity(), gso)
-        val signInIntent = googleSignInClient.signInIntent
-        startActivityForResult(signInIntent, RC_SIGN_IN)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == RC_SIGN_IN) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                sendTokenToBackend(account?.idToken)
-            } catch (e: ApiException) {
-                Log.e("GoogleSignIn", "Sign in failed with code: ${e.statusCode}")
-                Toast.makeText(context, "Google Sign-In Failed: ${e.statusCode}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun handleSignInResult(completedTask: Task<GoogleSignInAccount>) {
-        try {
-            val account = completedTask.getResult(ApiException::class.java)
-            Log.d("GoogleSignIn", "Signed in as: ${account.email}")
-            sendTokenToBackend(account?.idToken)
-        } catch (e: ApiException) {
-            Log.e("GoogleSignIn", "Sign in failed: ${e.statusCode}")
-            Toast.makeText(context, "Sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-
-    private fun sendTokenToBackend(idToken: String?) {
-        if (idToken != null) {
-            val requestBody = mapOf("id_token" to idToken)
-            ApiClient.instance.googleLogin(requestBody).enqueue(object : Callback<TokenResponse> {
-                override fun onResponse(call: Call<TokenResponse>, response: Response<TokenResponse>) {
-                    if (response.isSuccessful) {
-                        authManager.saveAuthToken(response.body()?.token ?: "")
-                        replaceFragment(ProfileFragment())
-                    } else {
-                        Toast.makeText(context, "Google Login Failed", Toast.LENGTH_LONG).show()
-                    }
-                }
-
-                override fun onFailure(call: Call<TokenResponse>, t: Throwable) {
-                    Toast.makeText(context, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
-                }
-            })
-        }
-    }
-
     private fun replaceFragment(fragment: Fragment) {
         parentFragmentManager.popBackStack()
         parentFragmentManager.beginTransaction()

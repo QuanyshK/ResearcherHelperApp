@@ -1,0 +1,17 @@
+Django>=5.1
+djangorestframework>=3.14.0
+dj-rest-auth>=3.0.0
+djangorestframework-simplejwt>=5.2.2
+drf-yasg>=1.21.7
+channels>=4.0.0
+channels-redis>=4.1.0
+gunicorn>=21.2.0
+psycopg2>=2.9.3
+python-dotenv>=1.0.0
+PyPDF2>=3.0.1
+python-docx>=0.8.11
+beautifulsoup4>=4.12.2
+requests>=2.31.0
+cryptography>=41.0.0
+google-generativeai>=0.3.0
+whitenoise
