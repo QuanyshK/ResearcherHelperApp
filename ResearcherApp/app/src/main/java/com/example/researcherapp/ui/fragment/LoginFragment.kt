@@ -60,30 +60,48 @@ class LoginFragment : Fragment() {
         val password = binding.loginPassword.text.toString().trim()
 
         if (username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(requireContext(), "Please fill in both fields", Toast.LENGTH_SHORT).show()
-        } else {
-            val request = LoginRequest(username, password)
-            ApiClient.instance.login(request).enqueue(object : Callback<TokenResponse> {
-                override fun onResponse(call: Call<TokenResponse>, response: Response<TokenResponse>) {
-                    if (response.isSuccessful) {
-                        response.body()?.token?.let { token ->
-                            ApiClient.setAuthToken(token)
-                            authManager.saveAuthToken(token)
-                            Toast.makeText(context, "Logged in", Toast.LENGTH_SHORT).show()
-                            replaceFragment(ProfileFragment())
-                        }
-                    } else {
-                        val errorBody = response.errorBody()?.string()
-                        Toast.makeText(context, "Login failed: $errorBody", Toast.LENGTH_LONG).show()
-                    }
-                }
-
-                override fun onFailure(call: Call<TokenResponse>, t: Throwable) {
-                    Toast.makeText(context, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
-                }
-            })
+            showToast("Please fill in both fields")
+            return
         }
+
+        val request = LoginRequest(username, password)
+        ApiClient.instance.login(request).enqueue(object : Callback<TokenResponse> {
+            override fun onResponse(call: Call<TokenResponse>, response: Response<TokenResponse>) {
+                if (response.isSuccessful) {
+                    response.body()?.token?.let { token ->
+                        ApiClient.setAuthToken(token)
+                        authManager.saveAuthToken(token)
+                        showToast("Welcome back, $username!")
+                        replaceFragment(ProfileFragment())
+                    }
+                } else {
+                    val errorMessage = when (response.code()) {
+                        400 -> "Incorrect username or password. Please try again."
+                        401 -> "Unauthorized. Please check your login credentials."
+                        500 -> "Server error. Please try again later."
+                        else -> "Login failed. Please check your internet connection and try again."
+                    }
+                    showToast(errorMessage)
+                    Log.e("LoginFragment", "Error: ${response.errorBody()?.string()}")
+                }
+            }
+
+            override fun onFailure(call: Call<TokenResponse>, t: Throwable) {
+                val errorMessage = when (t) {
+                    is java.net.SocketTimeoutException -> "Connection timed out. Please try again."
+                    is java.net.UnknownHostException -> "No internet connection. Please check your network."
+                    else -> "Unexpected error occurred: ${t.localizedMessage}"
+                }
+                showToast(errorMessage)
+                Log.e("LoginFragment", "Error: ${t.message}")
+            }
+        })
     }
+
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+    }
+
     private fun replaceFragment(fragment: Fragment) {
         parentFragmentManager.popBackStack()
         parentFragmentManager.beginTransaction()

@@ -36,12 +36,18 @@ class ResearchViewModel(application: Application) : AndroidViewModel(application
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    _articlesState.value = ArticlesState.Error(e.localizedMessage ?: "Unknown error")
+                    val errorMessage = when (e) {
+                        is java.net.UnknownHostException -> "No internet connection. Please check your network."
+                        is java.net.SocketTimeoutException -> "The request timed out. Please try again."
+                        else -> "An unexpected error occurred"
+                    }
+                    _articlesState.value = ArticlesState.Error(errorMessage)
                     isLoading = false
                 }
             }
         }
     }
+
 
     fun resetPagination() {
         currentPage = 0
@@ -52,18 +58,30 @@ class ResearchViewModel(application: Application) : AndroidViewModel(application
     private fun handleResponse(response: Response<ArxivFeed>) {
         if (response.isSuccessful) {
             val entries = response.body()?.entry ?: emptyList()
-            _articlesState.value = ArticlesState.Success(entries)
 
-            if (entries.size < pageSize) {
+            if (entries.isEmpty()) {
+                _articlesState.value = ArticlesState.Error("No articles found. Try refining your search.")
                 isLastPage = true
             } else {
-                currentPage++
+                _articlesState.value = ArticlesState.Success(entries)
+                if (entries.size < pageSize) {
+                    isLastPage = true
+                } else {
+                    currentPage++
+                }
             }
         } else {
-            _articlesState.value = ArticlesState.Error("Failed to load articles")
+            val errorMessage = when (response.code()) {
+                400 -> "Invalid search query. Please check and try again."
+                404 -> "No results found. Try a different search term."
+                500 -> "Server error. Please try again later."
+                else -> "Failed to load articles. Please try again."
+            }
+            _articlesState.value = ArticlesState.Error(errorMessage)
         }
         isLoading = false
     }
+
 }
 
 sealed class ArticlesState {

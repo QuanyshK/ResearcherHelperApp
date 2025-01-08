@@ -40,21 +40,37 @@ class ProfileFragment : Fragment() {
             override fun onResponse(call: Call<ProfileResponse>, response: Response<ProfileResponse>) {
                 if (response.isSuccessful) {
                     val profile = response.body()
-                    binding.profileTitle.text = profile?.username ?: "Unknown User"
+                    binding.profileTitle.text = profile?.username ?: "User"
                     binding.email.text = profile?.email ?: "No Email"
                 } else {
-                    logout()
+                    handleProfileError(response.code())
                 }
             }
 
             override fun onFailure(call: Call<ProfileResponse>, t: Throwable) {
-                if (isAdded) {
-                    logout()
-                } else {
-                    Toast.makeText(context, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
+                val errorMessage = when (t) {
+                    is java.net.SocketTimeoutException -> "Loading profile timed out. Please refresh."
+                    is java.net.UnknownHostException -> "No internet connection. Try again later."
+                    else -> "Failed to load profile. Please try again."
                 }
+                showToast(errorMessage)
+                logout()
             }
         })
+    }
+
+    private fun handleProfileError(code: Int) {
+        when (code) {
+            401 -> {
+                showToast("Session expired. Please log in again.")
+                logout()
+            }
+            500 -> showToast("Server error. Please try again later.")
+            else -> showToast("Unexpected error. Please refresh.")
+        }
+    }
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
     }
 
     private fun setupLogoutButton() {

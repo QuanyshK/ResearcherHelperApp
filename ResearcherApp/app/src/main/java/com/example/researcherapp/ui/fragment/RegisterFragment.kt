@@ -46,12 +46,12 @@ class RegisterFragment : Fragment() {
         val password = binding.registerPassword.text.toString().trim()
 
         if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(requireContext(), "All fields are required", Toast.LENGTH_SHORT).show()
+            showToast("All fields are required")
             return
         }
 
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            Toast.makeText(requireContext(), "Invalid email format", Toast.LENGTH_SHORT).show()
+            showToast("Please enter a valid email address.")
             return
         }
 
@@ -59,18 +59,31 @@ class RegisterFragment : Fragment() {
         ApiClient.instance.register(request).enqueue(object : Callback<TokenResponse> {
             override fun onResponse(call: Call<TokenResponse>, response: Response<TokenResponse>) {
                 if (response.isSuccessful) {
-                    Toast.makeText(context, "Registration successful", Toast.LENGTH_SHORT).show()
+                    showToast("Registration successful! Please log in.")
                     replaceFragment(LoginFragment())
                 } else {
-                    Toast.makeText(context, "Registration failed", Toast.LENGTH_SHORT).show()
+                    val errorMessage = when (response.code()) {
+                        400 -> "Username or email already taken. Please try again."
+                        500 -> "Registration failed. Try again later."
+                        else -> "Unexpected error occurred. Please try again."
+                    }
+                    showToast(errorMessage)
                 }
             }
 
             override fun onFailure(call: Call<TokenResponse>, t: Throwable) {
-                Toast.makeText(context, "Error: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                val errorMessage = when (t) {
+                    is java.net.UnknownHostException -> "No internet connection. Please try again later."
+                    else -> "Failed to register. Error: ${t.localizedMessage}"
+                }
+                showToast(errorMessage)
             }
         })
     }
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+    }
+
 
     private fun replaceFragment(fragment: Fragment) {
         parentFragmentManager.popBackStack()
