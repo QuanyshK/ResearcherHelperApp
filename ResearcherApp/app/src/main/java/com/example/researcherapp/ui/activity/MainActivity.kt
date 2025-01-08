@@ -3,6 +3,7 @@ package com.example.researcherapp.ui.activity
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import com.example.researcherapp.R
 import com.example.researcherapp.data.database.AuthManager
 import com.example.researcherapp.databinding.ActivityMainBinding
@@ -70,14 +71,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun replaceFragment(fragment: Fragment, addToBackStack: Boolean = false) {
-        if (currentFragment != fragment) {
-            val transaction = supportFragmentManager.beginTransaction()
-            transaction.replace(R.id.frame_layout, fragment)
-            if (addToBackStack) {
-                transaction.addToBackStack(null)
-            }
-            transaction.commit()
-            currentFragment = fragment
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.frame_layout)
+
+        if (currentFragment?.javaClass == fragment.javaClass) {
+            return
         }
+
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.frame_layout, fragment)
+
+        if (!addToBackStack) {
+            supportFragmentManager.popBackStackImmediate(
+                null,
+                FragmentManager.POP_BACK_STACK_INCLUSIVE
+            )
+        } else {
+            transaction.addToBackStack(null)
+        }
+
+        transaction.commit()
     }
 }

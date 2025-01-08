@@ -55,9 +55,11 @@ class ResearchListFragment : Fragment() {
         val authManager = AuthManager(requireContext())
 
         if (!authManager.isLoggedIn()) {
+            parentFragmentManager.popBackStack()
             parentFragmentManager.beginTransaction()
                 .replace(R.id.frame_layout, LoginFragment())
-                .commit()
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
         }
 
         binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -108,11 +110,11 @@ class ResearchListFragment : Fragment() {
                 putParcelable("article", entry)
             }
         }
-
+        parentFragmentManager.popBackStack()
         parentFragmentManager.beginTransaction()
             .replace(R.id.frame_layout, fragment)
             .addToBackStack(null)
-            .commit()
+            .commitAllowingStateLoss()
     }
 
     override fun onDestroyView() {

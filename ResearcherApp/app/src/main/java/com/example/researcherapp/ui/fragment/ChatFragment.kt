@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.researcherapp.R
@@ -41,6 +42,7 @@ class ChatFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         authManager = AuthManager(requireContext().applicationContext)
         if (!authManager.isLoggedIn()) {
+            parentFragmentManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
             parentFragmentManager.beginTransaction()
                 .replace(R.id.frame_layout, LoginFragment())
                 .commit()

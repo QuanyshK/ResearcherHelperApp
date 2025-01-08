@@ -22,6 +22,7 @@ class ScienceViewModel(application: Application) : AndroidViewModel(application)
         fetchArticles()
     }
 
+
     private fun fetchArticles() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -65,6 +66,7 @@ class ScienceViewModel(application: Application) : AndroidViewModel(application)
                 putString("pdfUrl", pdfUrl)
             }
         }
+        fragmentManager.popBackStack()
         fragmentManager.beginTransaction()
             .replace(android.R.id.content, fragment)
             .addToBackStack(null)
